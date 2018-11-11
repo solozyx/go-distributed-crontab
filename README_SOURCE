@@ -2,7 +2,7 @@ go-distributed-crontab/Go语言实现分布式crontab
     |
     |--master/分布式master节点cmd
         |--master.go
-            |master节点启动 根据机器CPU设置运行线程数
+            |master节点启动 根据机器CPU设置运行线程数 命令行参数
     |--src/
         |--master/分布式master节点
             |
@@ -12,3 +12,5 @@ go-distributed-crontab/Go语言实现分布式crontab
             |--master.json
                 |分布式master节点配置文件
                 |
+            |--Config.go
+                |--配置文件master.json解析 struct标签语法 json反序列化 配置单例

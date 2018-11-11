@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net"
 	"time"
+	"strconv"
 )
 
 var (
@@ -46,16 +47,19 @@ func InitApiServer() (err error){
 	// address 监听端口地址任意网卡,本机所有网卡的某一个端口 ":"任意ip的8070端口
 	// if listener,err = net.Listen("tcp",":8070"); err != nil {
 	// 把服务端端口写死了，交给运维部署，想要更换端口，需要重新编译程序，不合理
-	// 增加配置功能 TODO-1
-	if listener,err = net.Listen("tcp",":8070"); err != nil {
+	// 增加配置功能
+	// if listener,err = net.Listen("tcp",":8070"); err != nil {
+	if listener,err = net.Listen("tcp",":" + strconv.Itoa(G_config.ApiPort)); err != nil {
 		return
 	}
 	// 创建http服务
 	httpSever = &http.Server{
 		// 接口一般毫秒粒度超时控制,一个接口超过2000毫秒 2秒就认为服务端有异常
 		// 正常接口都是 毫秒 微秒 级别返回
-		ReadTimeout:5 * time.Second,
-		WriteTimeout:5 * time.Second,
+		// ReadTimeout:5 * time.Second,
+		ReadTimeout:time.Duration(G_config.ApiReadTimeout) * time.Millisecond,
+		// WriteTimeout:5 * time.Second,
+		WriteTimeout:time.Duration(G_config.ApiWriteTimeout) * time.Millisecond,
 		// 路由,转发,当http收到请求之后回调handler方法,根据请求的url遍历路由表找到匹配的回调函数
 		// 把流量转发给匹配的路由函数
 		// 代理模式
