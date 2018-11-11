@@ -3,14 +3,18 @@ go-distributed-crontab/Go语言实现分布式crontab
     |--master/分布式master节点cmd
         |--master.go
             |master节点启动 根据机器CPU设置运行线程数 命令行参数
+        |--master.json
+            |分布式master节点配置文件
     |--src/
         |--master/分布式master节点
             |
             |--ApiServer.go
-                |http server 模块的单例模式 初始化HTTP服务 go func(){}()协程监听客户端访问
-                |
-            |--master.json
-                |分布式master节点配置文件
+                |http server 模块的单例模式 初始化HTTP服务 go func(){}()协程监听客户端访问 任务job保存到etcd中
                 |
             |--Config.go
                 |--配置文件master.json解析 struct标签语法 json反序列化 配置单例
+        |--worker/
+
+        |--common/共享工具
+            |--Protocol.go
+                |

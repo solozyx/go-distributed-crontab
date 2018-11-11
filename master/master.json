@@ -8,5 +8,11 @@
   "API接口写超时":"单位 毫秒 ",
   "apiWriteTimeout":5000,
 
+  "etcd集群列表":"多个etcd避免单点故障,单点故障会自动重连",
+  "etcdEndpoints":["192.168.234.135:2379"],
+
+  "etcd连接超时":"单位 毫秒 ",
+  "etcdDialTimeout":5000,
+
   "":""
 }

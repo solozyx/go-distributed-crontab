@@ -24,6 +24,10 @@ func main() {
 	if err = master.InitConfig(masterConfFilePath); err != nil {
 		goto ERR
 	}
+	// 启动etcd任务管理器
+	if err = master.InitJobMgr(); err != nil {
+		goto ERR
+	}
 	// 启动API HTTP服务
 	if err = master.InitApiServer(); err != nil {
 		goto ERR

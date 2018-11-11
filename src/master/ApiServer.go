@@ -76,6 +76,8 @@ func InitApiServer() (err error){
 /*
 保存任务接口
 内部实现 首字母小写 不暴露
+job保存到etcd
+job是浏览器ajax提交上来的
 */
 func handleJobSave(w http.ResponseWriter, r *http.Request){
 
