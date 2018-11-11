@@ -5,6 +5,8 @@ import (
 	"net"
 	"time"
 	"strconv"
+	"encoding/json"
+	"common"
 )
 
 var (
@@ -78,7 +80,48 @@ func InitApiServer() (err error){
 内部实现 首字母小写 不暴露
 job保存到etcd
 job是浏览器ajax提交上来的
+POST请求 :
+	job = {"name":"job1","command":"echo hello","cronExpr":"* * * * *"}
+golang http 服务端默认不会解析POST表单 解析耗费CPU 需要主动解析
+应答: 0成功 非0失败
+	正常应答 {"errno":0,"msg":"error info","data":{任意json...}}
+	{任意json...} 用 interface{} 表示 空接口类型是万能容器 可以放任意对象
 */
-func handleJobSave(w http.ResponseWriter, r *http.Request){
-
+func handleJobSave(resp http.ResponseWriter, req *http.Request){
+	var(
+		err error
+		postJob string
+		job common.Job
+		oldJob *common.Job
+		// 序列化好的json串
+		bytes []byte
+	)
+	// 1.主动解析浏览器POST表单
+	if err = req.ParseForm(); err != nil {
+		// 如果提交表单合法一般不会解析失败
+		goto ERR
+	}
+	// 2.获取表单job字段
+	postJob = req.PostForm.Get("job")
+	// 3.反序列化postJob -> 结构体Job
+	if err = json.Unmarshal([]byte(postJob),&job); err != nil{
+		goto ERR
+	}
+	// 4. job -> JobMgr -> etcd
+	// 传入Job结构体指针job
+	if oldJob,err = G_jobMgr.SaveJob(&job); err != nil {
+		goto ERR
+	}
+	// 5. job保存到etcd成功返回 正常应答
+	// NOTICE 这里 err == nil 是json序列化成功没有错误
+	if bytes,err = common.BuildResponse(0,"success",oldJob); err == nil{
+		resp.Write(bytes)
+	}
+	return
+ERR:
+	// 6. job保存到etcd成功返回 异常应答
+	// NOTICE 这里 err == nil 是json序列化成功没有错误
+	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil{
+		resp.Write(bytes)
+	}
 }

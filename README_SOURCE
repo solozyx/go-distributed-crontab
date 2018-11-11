@@ -9,8 +9,8 @@ go-distributed-crontab/Go语言实现分布式crontab
         |--master/分布式master节点
             |
             |--ApiServer.go
-                |http server 模块的单例模式 初始化HTTP服务 go func(){}()协程监听客户端访问 任务job保存到etcd中
-                |
+                |http server 模块的单例模式 初始化HTTP服务 go func(){}()协程监听客户端访问 任务job保存到etcd中 handleJobSave
+                |http POST请求提交任务解析POST表单 http response API封装 interface{}空接口灵活使用
             |--Config.go
                 |--配置文件master.json解析 struct标签语法 json反序列化 配置单例
         |--worker/

@@ -3,6 +3,10 @@ package master
 import (
 	"github.com/coreos/etcd/clientv3"
 	"time"
+	"common"
+	"encoding/json"
+	"context"
+	"fmt"
 )
 
 var(
@@ -54,5 +58,44 @@ func InitJobMgr() (err error) {
 		lease:lease,
 	}
 
+	return
+}
+
+/*
+保存job到etcd服务器
+保存成功,返回旧的job,新键 / 旧键更新覆盖旧值 把旧值返回
+保存etcd格式 :
+	/cron/jobs/jobName -> json
+*/
+func (jobMgr *JobMgr)SaveJob(job *common.Job)(oldJob *common.Job,err error) {
+	var(
+		jobKey string
+		jobValue []byte
+		putResp *clientv3.PutResponse
+		oldJobObj common.Job
+	)
+	// etcd服务端保存key value
+	jobKey = "/cron/jobs/" + job.Name
+	// json.Marshal(job) 传入结构体本身 / 结构体指针 都可以
+	if jobValue,err = json.Marshal(job); err != nil{
+		// 有错误会赋值给返回参数列表的err return回去
+		return
+	}
+	// 保存到etcd
+	// []byte <-> string 转换是无缝的,底层存储类型都是byte
+	if putResp,err = jobMgr.kv.Put(context.TODO(),jobKey,string(jobValue),clientv3.WithPrevKV()); err != nil{
+		fmt.Println("etcd 保存 job失败")
+		return
+	}
+	// 更新则返回旧值
+	if putResp.PrevKv != nil {
+		// 旧值 -> 反序列化 Job
+		if err = json.Unmarshal(putResp.PrevKv.Value,&oldJobObj); err != nil{
+			// 旧值非法并不会影响新值的设置,这里put 操作已经成功
+			err = nil
+			return
+		}
+		oldJob = &oldJobObj
+	}
 	return
 }

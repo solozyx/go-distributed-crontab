@@ -5,6 +5,7 @@ import (
 	"master"
 	"fmt"
 	"flag"
+	"time"
 )
 
 var (
@@ -28,9 +29,13 @@ func main() {
 	if err = master.InitJobMgr(); err != nil {
 		goto ERR
 	}
-	// 启动API HTTP服务
+	// 启动API HTTP服务在协程里跑
 	if err = master.InitApiServer(); err != nil {
 		goto ERR
+	}
+	// http服务在协程里跑 主函数马上退出 不让退出
+	for{
+		time.Sleep(1*time.Second)
 	}
 	// 正常退出
 	return

@@ -1,5 +1,7 @@
 package common
 
+import "encoding/json"
+
 /*
 定时任务
 */
@@ -10,4 +12,28 @@ type Job struct{
 	Command string `json:"command"`
 	// cron表达式
 	CronExpr string `json:"cronExpr"`
+}
+
+/*
+http接口应答
+*/
+type Response struct {
+	Errno int `json:"error"`
+	Msg string `json:"msg"`
+	// data 不导出首字母小写
+	data interface{} `json:"data"`
+}
+
+/*
+http接口应答API
+*/
+func BuildResponse(error int,msg string,data interface{})(resp []byte,err error){
+	var(
+		response Response
+	)
+	response.Errno = error
+	response.Msg = msg
+	response.data = data
+	resp,err = json.Marshal(&response)
+	return
 }
