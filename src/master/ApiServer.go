@@ -176,6 +176,7 @@ func handleJobList(resp http.ResponseWriter, req *http.Request){
 	if bytes,err = common.BuildResponse(0,"success",jobList); err == nil{
 		resp.Write(bytes)
 	}
+	return
 ERR:
 	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil{
 		resp.Write(bytes)
