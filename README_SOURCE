@@ -17,4 +17,6 @@ go-distributed-crontab/Go语言实现分布式crontab
 
         |--common/共享工具
             |--Protocol.go
-                |
+                |http应答
+            |--Constants.go
+                |常量包 增强语义 便于维护

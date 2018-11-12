@@ -43,6 +43,7 @@ func InitApiServer() (err error){
 	// 参数(应答,请求) 应答对象写入你需要返回的数据做应答
 	// 浏览器请求该URL 该回调函数会被回调
 	mux.HandleFunc("/job/save",handleJobSave)
+	mux.HandleFunc("/job/delete",handleJobDelete)
 	// 启动监听端口
 	// http是tcp服务,启动TCP监听
 	// network 网络协议 tcp / udp 这里tcp协议绑定端口
@@ -122,6 +123,39 @@ ERR:
 	// 6. job保存到etcd成功返回 异常应答
 	// NOTICE 这里 err == nil 是json序列化成功没有错误
 	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil{
+		resp.Write(bytes)
+	}
+}
+
+/*
+删除任务接口
+POST请求: 表单格式 a=1&b=2&c=3
+	ip:8070/job/delete
+	name=job1
+*/
+func handleJobDelete(resp http.ResponseWriter, req *http.Request)  {
+	var(
+		err error
+		name string
+		oldJob *common.Job
+		bytes []byte
+	)
+	// 解析POST表单
+	if err = req.ParseForm(); err != nil{
+		goto ERR
+	}
+	// 要删除的任务名
+	name = req.PostForm.Get("name")
+	// etcd服务端删除key=name任务
+	if oldJob,err = G_jobMgr.DeleteJob(name); err != nil{
+		goto ERR
+	}
+	if bytes,err = common.BuildResponse(0,err.Error(),oldJob); err == nil{
+		resp.Write(bytes)
+	}
+	return
+ERR:
+	if bytes,err = common.BuildResponse(-1,"success",nil); err == nil{
 		resp.Write(bytes)
 	}
 }
