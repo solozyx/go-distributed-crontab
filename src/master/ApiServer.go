@@ -150,12 +150,12 @@ func handleJobDelete(resp http.ResponseWriter, req *http.Request)  {
 	if oldJob,err = G_jobMgr.DeleteJob(name); err != nil{
 		goto ERR
 	}
-	if bytes,err = common.BuildResponse(0,err.Error(),oldJob); err == nil{
+	if bytes,err = common.BuildResponse(0,"success",oldJob); err == nil{
 		resp.Write(bytes)
 	}
 	return
 ERR:
-	if bytes,err = common.BuildResponse(-1,"success",nil); err == nil{
+	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil{
 		resp.Write(bytes)
 	}
 }
