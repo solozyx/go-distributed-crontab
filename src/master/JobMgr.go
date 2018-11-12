@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"context"
 	"fmt"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 )
 
 var(
@@ -119,7 +120,7 @@ func (jobMgr *JobMgr)DeleteJob(jobName string)(oldJob *common.Job,err error) {
 		return
 	}
 	// 返回被删除任务 1真实删除
-	// 不可delResp.PrevKvs[0]取不到 0要删除的key不存在
+	// NOTICE 不可delResp.PrevKvs[0]取不到 0要删除的key不存在
 	if len(delResp.PrevKvs) > 0{
 		if err = json.Unmarshal(delResp.PrevKvs[0].Value,&oldJobObj); err != nil{
 			// json -> Job 失败 不关心旧值 只要删除了就是成功 err = nil
@@ -127,6 +128,42 @@ func (jobMgr *JobMgr)DeleteJob(jobName string)(oldJob *common.Job,err error) {
 			return
 		}
 		oldJob = &oldJobObj
+	}
+	return
+}
+
+/*
+不支持翻页 etcd get 某个目录下的所有kv
+*/
+func (jobMgr *JobMgr)ListJobs()(jobList []*common.Job,err error){
+	var(
+		dirKey string
+		getResp *clientv3.GetResponse
+		kvPair *mvccpb.KeyValue
+		// 指针变量用于Job的反序列化
+		job *common.Job
+	)
+	dirKey = common.JOB_SAVE_DIR
+	if getResp,err = jobMgr.kv.Get(context.TODO(),dirKey,clientv3.WithPrefix()); err != nil{
+		// err 返回给调用者
+		return
+	}
+	// 返回参数列表 (jobList []*common.Job,err error) 声明了一个slice 是nil空指针
+	// 需要make空间初始化 长度为0的slice不是nil
+	// NOTICE 后续调用者只需要判断 jobList的长度是否0 不需要判断它是否nil空指针 简化调用者判断复杂性
+	// len(jobList) == 0
+	jobList = make([]*common.Job,0)
+
+	// 遍历所有kv json -> 反序列化 Job
+	for _,kvPair = range getResp.Kvs {
+		// 给指针变量job 赋值新的 &Job{} 对象 去做反序列化
+		job = &common.Job{}
+		if err = json.Unmarshal(kvPair.Value,job); err != nil{
+			// 忽略 json字符串 -> Job对象 的错误
+			err = nil
+			continue
+		}
+		jobList = append(jobList,job)
 	}
 	return
 }

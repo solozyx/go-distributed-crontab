@@ -44,6 +44,7 @@ func InitApiServer() (err error){
 	// 浏览器请求该URL 该回调函数会被回调
 	mux.HandleFunc("/job/save",handleJobSave)
 	mux.HandleFunc("/job/delete",handleJobDelete)
+	mux.HandleFunc("/job/list",handleJobList)
 	// 启动监听端口
 	// http是tcp服务,启动TCP监听
 	// network 网络协议 tcp / udp 这里tcp协议绑定端口
@@ -154,6 +155,27 @@ func handleJobDelete(resp http.ResponseWriter, req *http.Request)  {
 		resp.Write(bytes)
 	}
 	return
+ERR:
+	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil{
+		resp.Write(bytes)
+	}
+}
+
+/*
+列举所有crontab任务 不翻页 一次性从etcd中取出
+*/
+func handleJobList(resp http.ResponseWriter, req *http.Request){
+	var(
+		jobList []*common.Job
+		err error
+		bytes []byte
+	)
+	if jobList,err = G_jobMgr.ListJobs(); err != nil{
+		goto ERR
+	}
+	if bytes,err = common.BuildResponse(0,"success",jobList); err == nil{
+		resp.Write(bytes)
+	}
 ERR:
 	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil{
 		resp.Write(bytes)
