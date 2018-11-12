@@ -118,8 +118,9 @@ func (jobMgr *JobMgr)DeleteJob(jobName string)(oldJob *common.Job,err error) {
 		// 删除失败 告诉调用者
 		return
 	}
-	// 返回被删除任务 1真实删除 0要删除的key不存在
-	if len(delResp.PrevKvs) >= 0{
+	// 返回被删除任务 1真实删除
+	// 不可delResp.PrevKvs[0]取不到 0要删除的key不存在
+	if len(delResp.PrevKvs) > 0{
 		if err = json.Unmarshal(delResp.PrevKvs[0].Value,&oldJobObj); err != nil{
 			// json -> Job 失败 不关心旧值 只要删除了就是成功 err = nil
 			err = nil
