@@ -20,8 +20,7 @@ http接口应答
 type Response struct {
 	Errno int `json:"error"`
 	Msg string `json:"msg"`
-	// data 不导出首字母小写
-	data interface{} `json:"data"`
+	Data interface{} `json:"data"`
 }
 
 /*
@@ -33,7 +32,7 @@ func BuildResponse(error int,msg string,data interface{})(resp []byte,err error)
 	)
 	response.Errno = error
 	response.Msg = msg
-	response.data = data
+	response.Data = data
 	resp,err = json.Marshal(&response)
 	return
 }
