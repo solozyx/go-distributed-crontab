@@ -167,3 +167,33 @@ func (jobMgr *JobMgr)ListJobs()(jobList []*common.Job,err error){
 	}
 	return
 }
+
+/*
+杀死任务
+更新 key = /cron/killer/jobName 所有的worker监听者watch到 key-value 变化 杀死任务
+*/
+func (jobMgr *JobMgr)KillJob(jobName string)(err error) {
+	var(
+		killerKey string
+		leaseGrantResp *clientv3.LeaseGrantResponse
+		leaseId clientv3.LeaseID
+	)
+	// NOTICE 通知worker节点杀死对应任务
+	killerKey = common.JOB_KILL_DIR + jobName
+	// 让worker监听到一次put操作,worker杀死任务
+	// 设置租约 设置1个过期时间 /cron/killer/ 目录下的存储会过期掉
+	// 不要浪费etcd的存储空间
+	// 带着租约去put一次 put完成马上过期掉
+	if leaseGrantResp,err = jobMgr.lease.Grant(context.TODO(),1); err != nil{
+		return
+	}
+	// 租约id
+	leaseId = leaseGrantResp.ID
+	// 设置killer标记 空值即可
+	// 1秒后自动删除 worker节点监听put操作 所以不影响监听
+	// 不关心put的结果 只关心是否put成功
+	if _,err = jobMgr.kv.Put(context.TODO(),killerKey,"",clientv3.WithLease(leaseId)); err != nil{
+		return
+	}
+	return
+}
