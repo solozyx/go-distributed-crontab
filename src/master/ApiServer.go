@@ -34,6 +34,10 @@ func InitApiServer() (err error){
 		mux *http.ServeMux
 		listener net.Listener
 		httpSever *http.Server
+		// web静态资源根目录
+		staticDir http.Dir
+		// 静态资源http回调
+		staticHandler http.Handler
 	)
 	// 配置路由 有很多接口 每个接口功能不同 要路由
 	// 创建路由对象
@@ -46,6 +50,20 @@ func InitApiServer() (err error){
 	mux.HandleFunc("/job/delete",handleJobDelete)
 	mux.HandleFunc("/job/list",handleJobList)
 	mux.HandleFunc("/job/kill",handleJobKill)
+
+	// golang加载静态文件页面
+	staticDir = http.Dir(G_config.WebRoot)
+	// 路由handler是处理动态请求
+	// 静态资源从磁盘读取 渲染到浏览器 net/http库提供内置handler
+	// 无需像上面那样自己定义
+	staticHandler = http.FileServer(staticDir)
+	// mux接收到请求的url如 /index.html 会和路由表中所有的规则进行匹配
+	// 这里 /index.html 和上面的路由规则都无法匹配 但是能匹配 / 最大匹配原则
+	// 请求 /index.html 匹配到 /
+	// StripPrefix 把 "/index.html" 的 "/" 抹掉 得到 "index.html" 交给 staticHandler
+	// 相当于做一次转发
+	mux.Handle("/",http.StripPrefix("/",staticHandler))
+
 	// 启动监听端口
 	// http是tcp服务,启动TCP监听
 	// network 网络协议 tcp / udp 这里tcp协议绑定端口

@@ -5,12 +5,16 @@ go-distributed-crontab/Go语言实现分布式crontab
             |master节点启动 根据机器CPU设置运行线程数 命令行参数
         |--master.json
             |分布式master节点配置文件
+        |--webroot/ 网站静态资源根目录
+            |--index.html
+            |jquery.min.js bootstrap.min.css bootstrap.min.js
     |--src/
         |--master/分布式master节点
             |
             |--ApiServer.go
                 |http server 模块的单例模式 初始化HTTP服务 go func(){}()协程监听客户端访问 任务job保存到etcd中 handleJobSave
                 |http POST请求提交任务解析POST表单 http response API封装 interface{}空接口灵活使用
+                |配置网站静态页面路由
             |--Config.go
                 |--配置文件master.json解析 struct标签语法 json反序列化 配置单例
         |--worker/
