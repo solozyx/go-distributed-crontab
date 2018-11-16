@@ -18,7 +18,7 @@ type Job struct{
 http接口应答
 */
 type Response struct {
-	Errno int `json:"error"`
+	Errno int `json:"errno"`
 	Msg string `json:"msg"`
 	Data interface{} `json:"data"`
 }
