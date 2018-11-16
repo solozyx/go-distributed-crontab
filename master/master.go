@@ -10,7 +10,7 @@ import (
 
 var (
 	// 接收命令行参数
-	masterConfFilePath string
+	masterConfFileParam string
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	// 初始化线程
 	initEnv()
 	// 加载master配置
-	if err = master.InitConfig(masterConfFilePath); err != nil {
+	if err = master.InitConfig(masterConfFileParam); err != nil {
 		goto ERR
 	}
 	// 启动etcd任务管理器
@@ -62,7 +62,7 @@ func initArgs(){
 	// value 默认值 命令行没有传入 -config 的 ./master.json 值的话使用默认值
 	// usage 使用介绍 master -h 查看配置项的提示内容
 	//
-	flag.StringVar(&masterConfFilePath,"name","./master.json","传入master节点配置文件")
+	flag.StringVar(&masterConfFileParam,"name","./master.json","传入master节点配置文件")
 	// 解析命令行参数 赋值到 &masterConfFilePath
 	//
 	flag.Parse()

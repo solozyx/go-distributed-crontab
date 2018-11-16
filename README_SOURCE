@@ -9,6 +9,12 @@ go-distributed-crontab/Go语言实现分布式crontab
             |--index.html
             |jquery.min.js bootstrap.min.css bootstrap.min.js
             |ajax请求
+            |管理后台页面实现 对etcd集群的CRUD操作 管理 /cron/jobs/ 任务
+    |--worker/分布式worker节点cmd
+        |--worker.go
+            |worker节点启动
+        |--worker.json
+            |分布式worker节点配置文件
     |--src/
         |--master/分布式master节点
             |
@@ -18,9 +24,15 @@ go-distributed-crontab/Go语言实现分布式crontab
                 |配置网站静态页面路由
             |--Config.go
                 |--配置文件master.json解析 struct标签语法 json反序列化 配置单例
-        |--worker/
-
-        |--common/共享工具
+            |--JobMgr.go
+                |--对etcd集群的CRUD操作 管理 /cron/jobs/ 和 /cron/killer/ 任务
+        |--worker/分布式worker节点
+            |
+            |--Config.go
+                |--
+            |--JobMgr.go
+                |--
+        |--common/共享工具类
             |--Protocol.go
                 |http应答
             |--Constants.go
