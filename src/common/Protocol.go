@@ -60,7 +60,7 @@ func UnpackJob(jsonStrByte []byte) (job *Job,err error){
 		jobPtr *Job
 	)
 	// 创建1个Job对象
-	job = &Job{}
+	jobPtr = &Job{}
 	if err = json.Unmarshal(jsonStrByte,jobPtr); err != nil {
 		return
 	}

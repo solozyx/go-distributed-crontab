@@ -43,6 +43,6 @@ func initEnv() {
 func initArgs(){
 	// 从节点启动 worker -config ./worker.json
 	// 解析命令行参数 赋值到 &masterConfFileParam
-	flag.StringVar(&workerConfFileParam,"name","./master.json","传入master节点配置文件")
+	flag.StringVar(&workerConfFileParam,"name","./worker.json","传入worker节点配置文件")
 	flag.Parse()
 }

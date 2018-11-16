@@ -6,6 +6,7 @@ import (
 	"context"
 	"common"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"fmt"
 )
 
 var(
@@ -81,6 +82,7 @@ func (jobMgr *JobMgr)watchJobs()(err error){
 		if job,err = common.UnpackJob(kvPair.Value); err == nil { // err!=nil 任务反序列化失败 静默处理
 			jobEvent = common.BuildJobEvent(common.JOB_EVENT_SAVE,job)
 			// TODO 把 jobEvent 推送给 scheduler 调度协程调度任务
+			fmt.Println(jobEvent)
 		}
 	}
 	// 2.从该Revision开始向后监听kv变化事件 启动监听协程
@@ -89,7 +91,10 @@ func (jobMgr *JobMgr)watchJobs()(err error){
 		watchStartRevision = getResp.Header.Revision + 1
 		// 监听etcd集群变化 /cron/jobs/ 后续变化
 		// NOTICE channel在etcd设计中的表现
-		watchChan = jobMgr.watcher.Watch(context.TODO(),common.JOB_SAVE_DIR,clientv3.WithRev(watchStartRevision))
+		watchChan = jobMgr.watcher.Watch(
+			context.TODO(),
+			common.JOB_SAVE_DIR,
+			clientv3.WithRev(watchStartRevision),clientv3.WithPrefix())
 		for watchResp = range watchChan {
 			// 每次etcd监听返回的是多个Event事件
 			// 每个Event是不同key的事件 不一定是同一个key
@@ -104,6 +109,7 @@ func (jobMgr *JobMgr)watchJobs()(err error){
 				}
 				// 构建一个更新Event事件
 				jobEvent = common.BuildJobEvent(common.JOB_EVENT_SAVE,job)
+					fmt.Println(jobEvent)
 				case mvccpb.DELETE: // 删除
 				// 删除了 /cron/jobs/job1 需要得到 job1
 				jobName = common.ExtractJobName(string(watchEvent.Kv.Key))
@@ -111,6 +117,7 @@ func (jobMgr *JobMgr)watchJobs()(err error){
 				job = &common.Job{Name:jobName}
 				// 构造一个删除Event
 				jobEvent = common.BuildJobEvent(common.JOB_EVENT_DELETE,job)
+					fmt.Println(jobEvent)
 				// 推送一个删除事件给scheduler
 				}
 			}
