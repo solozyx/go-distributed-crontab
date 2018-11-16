@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <title>Golang分布式Crontab</title>
     <!-- bootstrap + jquery -->
+    <!-- vuejs , reactjs ,angular js -->
     <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <!-- vuejs , reactjs ,angular js -->
 </head>
 <body>
     <!-- 全屏栅格 左右两端顶到浏览器头部 -->
@@ -58,7 +58,8 @@
         </div>
     </div>
 
-    <!-- position: fixed -->
+    <!-- 模态框是绝对定位 position: fixed 放在整个HTML的任何位置都可以 不会与正常的DOM流混排 是独立的 -->
+    <!-- 在模态框展示表单 编辑任务 -->
     <div id="edit-modal" class="modal fade" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -68,8 +69,8 @@
                 </div>
                 <div class="modal-body">
                     <form>
-                        <div class="form-group">
-                            <label for="edit-name">任务名称</label>
+                        <div class="form-group"> <!-- 表单组 -->
+                            <label for="edit-name">任务名称</label> <!-- for id 表示该label归属于edit-name input控件 -->
                             <input type="text" class="form-control" id="edit-name" placeholder="任务名称">
                         </div>
                         <div class="form-group">
@@ -80,10 +81,10 @@
                             <label for="edit-cronExpr">cron表达式</label>
                             <input type="text" class="form-control" id="edit-cronExpr" placeholder="cron表达式">
                         </div>
-                    </form>
+                    </form> <!-- /.form 表单 -->
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-primary" id="save-job">保存</button>
                 </div>
             </div><!-- /.modal-content -->
@@ -192,13 +193,18 @@
             // 才回调这里的回调函数
             // 点击编辑按钮->触发点击事件->冒泡到table->table捕获点击事件->过滤发现事件来源是编辑按钮->执行回调
             //
+            // 编辑任务
+            // 点击编辑按钮弹出模态框在网页正中央
             $("#job-list").on("click", ".edit-job", function(event) {
                 // console.log("编辑按钮")
-                // 取当前job的信息，赋值给模态框的input
+                // 取当前job的信息赋值给模态框的input控件
+                // $(this) 是触发事件的元素 这里 $(this) 是编辑按钮
+                // $(this).parents('tr') 所在行 .children('.job-name') 子元素列 .text() 的值
+                //
                 $('#edit-name').val($(this).parents('tr').children('.job-name').text())
                 $('#edit-command').val($(this).parents('tr').children('.job-command').text())
                 $('#edit-cronExpr').val($(this).parents('tr').children('.job-cronExpr').text())
-                // 弹出模态框
+                // 点击编辑按钮 弹出展示模态框 bootstrap 的 js 库
                 $('#edit-modal').modal('show')
             })
             // 删除任务
@@ -235,14 +241,18 @@
                     }
                 })
             })
-            // 保存任务
+            // 保存任务 编辑任务 模态框里面的保存按钮
             $('#save-job').on('click', function() {
-                var jobInfo = {name: $('#edit-name').val(), command: $('#edit-command').val(), cronExpr: $('#edit-cronExpr').val()}
+                var jobInfo = {
+                    name: $('#edit-name').val(), // .val() 取input输入框的值
+                    command: $('#edit-command').val(),
+                    cronExpr: $('#edit-cronExpr').val()
+                }
                 $.ajax({
                     url: '/job/save',
                     type: 'post',
                     dataType: 'json',
-                    data: {job: JSON.stringify(jobInfo)},
+                    data: {job: JSON.stringify(jobInfo)}, // jobInfo js对象 -> 序列化为 json字符串
                     complete: function() {
                         window.location.reload()
                     }
@@ -250,10 +260,10 @@
             })
             // 新建任务
             $('#new-job').on('click', function() {
-                $('#edit-name').val("")
+                $('#edit-name').val("") // 清空表单input值
                 $('#edit-command').val("")
                 $('#edit-cronExpr').val("")
-                $('#edit-modal').modal('show')
+                $('#edit-modal').modal('show') // 使用编辑任务的模态框
             })
             // 查看任务日志
             $("#job-list").on("click", ".log-job", function(event) {

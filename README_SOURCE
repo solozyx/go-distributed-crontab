@@ -8,6 +8,7 @@ go-distributed-crontab/Go语言实现分布式crontab
         |--webroot/ 网站静态资源根目录
             |--index.html
             |jquery.min.js bootstrap.min.css bootstrap.min.js
+            |ajax请求
     |--src/
         |--master/分布式master节点
             |
