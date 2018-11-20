@@ -1,0 +1,137 @@
+package worker
+
+import (
+	"common"
+	"time"
+	"fmt"
+)
+
+var(
+	G_scheduler *Scheduler
+)
+
+/*
+任务调度
+不停轮询,检查哪些cron定时任务到期
+实现稍微复杂
+*/
+type Scheduler struct{
+	// channel etcd任务事件队列 任务变化的时候通知过来
+	jobEventChan chan *common.JobEvent
+	// job调度计划表 任务名全局唯一
+	jobPlanTable map[string]*common.JobSchedulePlan
+}
+
+/*
+初始化调度器
+*/
+func InitScheduler()(err error){
+	G_scheduler = &Scheduler{
+		// make 1000 的容量
+		jobEventChan:make(chan *common.JobEvent,1000),
+		jobPlanTable:make(map[string]*common.JobSchedulePlan),
+	}
+	// 启动调度协程
+	go G_scheduler.scheduleLoop()
+	return
+}
+
+/*
+启动调度协程
+轮询cron定时任务是否到期
+*/
+func (scheduler *Scheduler)scheduleLoop(){
+	var(
+		jobEvent *common.JobEvent
+		scheduleAfter time.Duration
+		scheduleTimer *time.Timer
+	)
+	// 初始化(1秒 刚启动没有任务)
+	scheduleAfter = scheduler.TrySchedule()
+	// 调度延迟定时器
+	scheduleTimer = time.NewTimer(scheduleAfter)
+	// for轮询监听任务事件
+	for{
+		select {
+		// worker启动获取 全量任务 同步给 Scheduler
+		// 在 scheduleLoop 死循环轮询 监听 scheduler.jobEventChan
+		// 监听任务变化事件 当有任务来的时候 就匹配case
+		case jobEvent = <-scheduler.jobEventChan:
+			// 对内存中维护的job进行CRUD
+			scheduler.handleJobEvent(jobEvent)
+		case <- scheduleTimer.C :
+			// 最近的任务到期
+		}
+		scheduleAfter = scheduler.TrySchedule()
+		// 重置定时器
+		scheduleTimer.Reset(scheduleAfter)
+	}
+}
+
+/*
+推送任务变化事件
+*/
+func (scheduler *Scheduler)PushJobEvent(jobEvent *common.JobEvent){
+	scheduler.jobEventChan <- jobEvent
+}
+
+/*
+处理任务事件
+重点:维护scheduler任务列表,实时同步job任务,保持内存中任务和etcd保持一致
+*/
+func (scheduler *Scheduler)handleJobEvent(jobEvent *common.JobEvent){
+	var(
+		jobSchedulePlan *common.JobSchedulePlan
+		err error
+		jobExisted bool
+	)
+	switch jobEvent.EventType {
+	case common.JOB_EVENT_SAVE:
+		if jobSchedulePlan,err = common.BuildJobSchedulePlan(jobEvent.Job); err != nil {
+			// 解析cron表达式失败 静默处理
+			return
+		}
+		scheduler.jobPlanTable[jobEvent.Job.Name] = jobSchedulePlan
+	case common.JOB_EVENT_DELETE:
+		// etcd是有序的事件推送 一般job是存在的
+		// etcd删除不存在的key还是会有delete事件过来 但是内存中已经没有该job了
+		if jobSchedulePlan,jobExisted = scheduler.jobPlanTable[jobEvent.Job.Name]; jobExisted{
+			delete(scheduler.jobPlanTable,jobEvent.Job.Name)
+		}
+	}
+}
+
+/*
+重新计算任务调度状态
+*/
+func (scheduler *Scheduler)TrySchedule()(scheduleAfter time.Duration){
+	var(
+		jobPlan *common.JobSchedulePlan
+		now time.Time
+		// 初始化是nil空指针
+		nearTime *time.Time
+	)
+	// 如果 scheduler.jobPlanTable 为空 随便睡眠多久
+	if len(scheduler.jobPlanTable) == 0 {
+		return 1 * time.Second
+	}
+
+	now = time.Now()
+	// 1.遍历所有任务
+	for _,jobPlan = range scheduler.jobPlanTable {
+		if jobPlan.NextTime.Before(now) || jobPlan.NextTime.Equal(now) {
+			// TODO 任务到期 尝试(任务到期但是前一次执行还没有结束 不一定能启动它,要等前一次执行结束)执行任务
+			fmt.Println("worker scheduler 执行任务 : ",jobPlan.Job.Name)
+			// 基于当前时间 更新job下一次执行时间
+			jobPlan.NextTime = jobPlan.Expr.Next(now)
+		}
+		// 统计最近一个要过期的任务时间
+		if nearTime == nil || jobPlan.NextTime.Before(*nearTime){
+			nearTime = &jobPlan.NextTime
+		}
+	}
+	// 2.统计最近到期任务 scheduleAfter秒后到期 就 sleep scheduleAfter
+	// 下次调度间隔 最近要执行的任务调度时间 - 当前时间
+	scheduleAfter = (*nearTime).Sub(now)
+	return
+}

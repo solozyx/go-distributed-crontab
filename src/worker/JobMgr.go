@@ -77,12 +77,13 @@ func (jobMgr *JobMgr)watchJobs()(err error){
 		// 从etcd集群get失败 return err 给调用者
 		return
 	}
+	// 启动后 获取当前全量任务列表 把存量全量任务同步给 worker 的 Scheduler
 	// 遍历当前etcd中任务 kvPair.Value json字符串 ->反序列为 Job 对象
 	for _,kvPair = range getResp.Kvs {
 		if job,err = common.UnpackJob(kvPair.Value); err == nil { // err!=nil 任务反序列化失败 静默处理
 			jobEvent = common.BuildJobEvent(common.JOB_EVENT_SAVE,job)
 			// TODO 把 jobEvent 推送给 scheduler 调度协程调度任务
-			fmt.Println(jobEvent)
+			G_scheduler.PushJobEvent(jobEvent)
 		}
 	}
 	// 2.从该Revision开始向后监听kv变化事件 启动监听协程
@@ -120,9 +121,11 @@ func (jobMgr *JobMgr)watchJobs()(err error){
 					fmt.Println(jobEvent)
 				// 推送一个删除事件给scheduler
 				}
+
+				// TODO 把 jobEvent 推送给 scheduler 调度协程调度任务
+				G_scheduler.PushJobEvent(jobEvent)
 			}
 		}
-		// TODO 把 jobEvent 推送给 scheduler 调度协程调度任务
 	}()
 	return
 }
