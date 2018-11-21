@@ -22,6 +22,8 @@ type Scheduler struct{
 	jobPlanTable map[string]*common.JobSchedulePlan
 	// job执行表存放当前正在执行的任务
 	jobExecutingTable map[string]*common.JobExecuteInfo
+	// Executor执行shell结果回传Scheduler 任务执行结果队列
+	jobExecuteResultChan chan *common.JobExecuteResult
 }
 
 /*
@@ -33,6 +35,7 @@ func InitScheduler()(err error){
 		jobEventChan:make(chan *common.JobEvent,1000),
 		jobPlanTable:make(map[string]*common.JobSchedulePlan),
 		jobExecutingTable:make(map[string]*common.JobExecuteInfo),
+		jobExecuteResultChan:make(chan *common.JobExecuteResult,1000),
 	}
 	// 启动调度协程
 	go G_scheduler.scheduleLoop()
@@ -48,6 +51,7 @@ func (scheduler *Scheduler)scheduleLoop(){
 		jobEvent *common.JobEvent
 		scheduleAfter time.Duration
 		scheduleTimer *time.Timer
+		jobExecuteResult *common.JobExecuteResult
 	)
 	// 初始化(1秒 刚启动没有任务)
 	scheduleAfter = scheduler.TrySchedule()
@@ -64,6 +68,9 @@ func (scheduler *Scheduler)scheduleLoop(){
 			scheduler.handleJobEvent(jobEvent)
 		case <- scheduleTimer.C :
 			// 最近的任务到期
+		// TODO Executor执行完shell把结果回传Scheduler,调度协程需要监听Executor的回传数据
+		case jobExecuteResult = <- scheduler.jobExecuteResultChan:
+			scheduler.handleJobResult(jobExecuteResult)
 		}
 		scheduleAfter = scheduler.TrySchedule()
 		// 重置定时器
@@ -157,6 +164,7 @@ func (scheduler *Scheduler)TryStartJob(jobPlan *common.JobSchedulePlan){
 	if jobExecuteInfo,jobExecuting = scheduler.jobExecutingTable[jobPlan.Job.Name]; jobExecuting {
 		// job正在运行 静默处理
 		fmt.Println("worker Scheduler 任务正在执行跳过本次执行 : ",jobPlan.Job.Name)
+		// delete(scheduler.jobExecutingTable,jobExecuteResult.ExecuteInfo.Job.Name) 保证不走到此分支
 		return
 	}
 	// job没有执行 则执行job任务
@@ -164,4 +172,24 @@ func (scheduler *Scheduler)TryStartJob(jobPlan *common.JobSchedulePlan){
 	scheduler.jobExecutingTable[jobPlan.Job.Name] = jobExecuteInfo
 	// TODO 执行job 启动shell命令 并发调度shell
 	fmt.Println("worker Scheduler 开始执行job任务 : ",jobPlan.Job.Name,jobExecuteInfo.PlanTime,jobExecuteInfo.RealTime)
+	G_executor.ExecuteJob(jobExecuteInfo)
+}
+
+/*
+job shell执行结果回调方法
+*/
+func (scheduler *Scheduler)PushJobResult(jobExecuteResult *common.JobExecuteResult){
+	scheduler.jobExecuteResultChan <- jobExecuteResult
+}
+
+/*
+Executor执行完shell把结果回传Scheduler,调度协程处理Executor的回传数据
+*/
+func (scheduler *Scheduler)handleJobResult(jobExecuteResult *common.JobExecuteResult){
+	fmt.Println("worker Executor 回传 Scheduler 任务执行结果 : ",
+		jobExecuteResult.ExecuteInfo.Job.Name,
+		string(jobExecuteResult.Output),
+		jobExecuteResult.Err)
+	// 从正在执行的任务列表中删除该任务 保证后续该任务在 TrySchedule 能再次被调度执行
+	delete(scheduler.jobExecutingTable,jobExecuteResult.ExecuteInfo.Job.Name)
 }

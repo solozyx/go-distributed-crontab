@@ -35,6 +35,9 @@ go-distributed-crontab/Go语言实现分布式crontab
             |--Scheduler.go
                 |--调度协程 同步etcd任务到调度列表 jobPlanTable
                    执行任务 jobExecutingTable map的并发去重
+                   Executor执行shell 通过channel 回传执行结果给 Scheduler 协程间通信用channel
+            |--Executor.go
+                |--
         |--common/共享工具类
             |--Protocol.go
                 |http应答 工具方法

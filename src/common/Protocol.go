@@ -7,6 +7,11 @@ import (
 	"github.com/gorhill/cronexpr"
 )
 
+//-----------------------------
+// common/Protocol
+// 供 master worker 引用 跨包访问 结构体字段,首字母需要大写
+//-----------------------------
+
 /*
 定时任务
 */
@@ -41,6 +46,20 @@ type JobExecuteInfo struct{
 	PlanTime time.Time
 	// 真实job开始时间
 	RealTime time.Time
+}
+
+/*
+job shell 执行结果
+*/
+type JobExecuteResult struct {
+	ExecuteInfo *JobExecuteInfo
+	// 执行shell命令的标准输出
+	Output []byte
+	// 执行shell命令的标准错误输出
+	Err error
+	// shell 脚本真实启动时间
+	StartTime time.Time
+	EndTime time.Time
 }
 
 /*
