@@ -151,6 +151,6 @@ func (jobLock *JobLock)UnLock(){
 		jobLock.cancelFunc()
 		// 释放租约->租约关联lockKey删除->锁释放
 		jobLock.lease.Revoke(context.TODO(),jobLock.leaseId)
-		fmt.Println("orker JobLock 释放锁 : ", common.JOB_LOCK_DIR + jobLock.jobName)
+		fmt.Println("worker JobLock 释放锁 : ", common.JOB_LOCK_DIR + jobLock.jobName)
 	}
 }

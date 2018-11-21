@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 	"github.com/gorhill/cronexpr"
+	"context"
 )
 
 //-----------------------------
@@ -46,6 +47,10 @@ type JobExecuteInfo struct{
 	PlanTime time.Time
 	// 真实job开始时间
 	RealTime time.Time
+	// 用于取消 /cron/jobs/jobName 对应 shell命令执行的上下文
+	CancelCtx context.Context
+	// 用于取消 /cron/jobs/jobName 对应 shell命令执行的方法
+	CancelFunc context.CancelFunc
 }
 
 /*
@@ -120,6 +125,13 @@ func ExtractJobName(jobKey string) string {
 	return strings.TrimPrefix(jobKey,JOB_SAVE_DIR)
 }
 
+/*
+从 /cron/killer/job1 抹掉 /cron/killer/ 提取 job1
+*/
+func ExtractKillerName(killerKey string) string {
+	return strings.TrimPrefix(killerKey,JOB_KILL_DIR)
+}
+
 func BuildJobEvent(eventType int, job *Job) (jobEvent *JobEvent) {
 	return &JobEvent{
 		EventType:eventType,
@@ -157,5 +169,6 @@ func BuildJobExecuteInfo(jobSchedulePlan *JobSchedulePlan)(jobExecuteInfo *JobEx
 		// 真实调度时间 计算繁忙导致延迟
 		RealTime:time.Now(),
 	}
+	jobExecuteInfo.CancelCtx,jobExecuteInfo.CancelFunc = context.WithCancel(context.TODO())
 	return
 }

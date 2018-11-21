@@ -14,5 +14,7 @@ const (
 	JOB_EVENT_SAVE = 1
 	// DELETE job 事件
 	JOB_EVENT_DELETE = 2
+	// 强杀 job 事件
+	JOB_EVENT_KILL = 3
 
 )

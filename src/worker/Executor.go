@@ -3,7 +3,6 @@ package worker
 import (
 	"common"
 	"os/exec"
-	"context"
 	"time"
 )
 
@@ -59,7 +58,12 @@ func (executor *Executor)ExecuteJob(jobExecuteInfo *common.JobExecuteInfo){
 			// 抢锁成功后重置任务开始时间
 			result.StartTime = time.Now()
 			// 执行shell命令 /bin/bash -c "shell"
-			cmd = exec.CommandContext(context.TODO(),"/bin/bash","-c",jobExecuteInfo.Job.Command)
+			// cmd = exec.CommandContext(context.TODO(),"/bin/bash","-c",jobExecuteInfo.Job.Command)
+			cmd = exec.CommandContext(
+				jobExecuteInfo.CancelCtx,
+				"/bin/bash",
+				"-c",
+				jobExecuteInfo.Job.Command)
 			// 执行cmd并捕获输出
 			output,err = cmd.CombinedOutput()
 			result.EndTime = time.Now()

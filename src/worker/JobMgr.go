@@ -14,7 +14,7 @@ var(
 )
 
 /*
-worker JobMgr 任务管理器 监听 /cron/jobs/ 和 /cron/killer/ 任务变化
+worker JobMgr 任务管理器 监听 /cron/jobs/ 任务变化
 master增删改查修改etcd中的任务
 worker监听etcd中的任务同步到内存 监听kv变化
 */
@@ -53,6 +53,8 @@ func InitJobMgr() (err error) {
 	}
 	//启动任务监听
 	G_jobMgr.watchJobs()
+	//启动强杀任务监听
+	G_jobMgr.watchKiller()
 	return
 }
 
@@ -139,5 +141,45 @@ TODO 在分布式集群中防止1个任务并发调度多次 在分布式环境�
 */
 func (jobMgr *JobMgr)CreateJobLock(jobName string) (jobLock *JobLock) {
 	jobLock = InitJobLock(jobName,jobMgr.kv,jobMgr.lease)
+	return
+}
+
+/*
+私有方法
+监听etcd中 /cron/killer/ 任务变化
+*/
+func (jobMgr *JobMgr)watchKiller()(err error){
+	var(
+		jobName string
+		job *common.Job
+		jobEvent *common.JobEvent
+		watchChan clientv3.WatchChan
+		watchResp clientv3.WatchResponse
+		watchEvent *clientv3.Event
+	)
+	go func(){
+		watchChan = jobMgr.watcher.Watch(context.TODO(),common.JOB_KILL_DIR,clientv3.WithPrefix())
+		for watchResp = range watchChan {
+			for _,watchEvent = range watchResp.Events {
+				switch watchEvent.Type {
+				// 强杀某个任务
+				case mvccpb.PUT:
+					// /cron/killer/job1 提前 job1
+					jobName = common.ExtractKillerName(string(watchEvent.Kv.Key))
+					fmt.Println("worker JobMgr 推送强杀任务 : ",jobName)
+					// 强杀任务只需要任务名
+					job = &common.Job{
+						Name:jobName,
+					}
+					jobEvent = common.BuildJobEvent(common.JOB_EVENT_KILL,job)
+					// kill 事件推送给 Scheduler 调度模块
+					G_scheduler.PushJobEvent(jobEvent)
+				// killer标记过期被自动删除
+				case mvccpb.DELETE:
+					// delete操作不关心 租约过期 key 被删除的情形不关心
+				}
+			}
+		}
+	}()
 	return
 }

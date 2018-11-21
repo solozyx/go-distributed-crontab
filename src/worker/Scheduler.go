@@ -92,6 +92,8 @@ func (scheduler *Scheduler)PushJobEvent(jobEvent *common.JobEvent){
 func (scheduler *Scheduler)handleJobEvent(jobEvent *common.JobEvent){
 	var(
 		jobSchedulePlan *common.JobSchedulePlan
+		jobExecuteInfo *common.JobExecuteInfo
+		jobExecuting bool
 		err error
 		jobExisted bool
 	)
@@ -107,6 +109,16 @@ func (scheduler *Scheduler)handleJobEvent(jobEvent *common.JobEvent){
 		// etcd删除不存在的key还是会有delete事件过来 但是内存中已经没有该job了
 		if jobSchedulePlan,jobExisted = scheduler.jobPlanTable[jobEvent.Job.Name]; jobExisted{
 			delete(scheduler.jobPlanTable,jobEvent.Job.Name)
+		}
+	case common.JOB_EVENT_KILL:
+		// 取消对应 /cron/jobs/jobName 的shell命令的执行
+		fmt.Println("worker Scheduler 收到强杀任务推送 : ",jobEvent.Job.Name)
+		if jobExecuteInfo,jobExecuting = scheduler.jobExecutingTable[jobEvent.Job.Name]; jobExecuting {
+			// 除非 exec 终断杀死 shell命令执行
+			// output,err = cmd.CombinedOutput()
+			// 返回这里 输出标准错误输出
+			fmt.Println("worker Sheduler 调度执行强杀 : ",jobEvent.Job.Name)
+			jobExecuteInfo.CancelFunc()
 		}
 	}
 }
