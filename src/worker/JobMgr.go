@@ -129,3 +129,15 @@ func (jobMgr *JobMgr)watchJobs()(err error){
 	}()
 	return
 }
+
+/*
+TODO 在分布式集群中防止1个任务并发调度多次 在分布式环境下做互斥【分布式锁】
+锁到了执行下面的代码 没锁到就跳过了
+因为其他worker执行了 本worker节点就不需要执行了
+
+锁 jobName 任务 仅仅是把锁创建出来 并不加锁
+*/
+func (jobMgr *JobMgr)CreateJobLock(jobName string) (jobLock *JobLock) {
+	jobLock = InitJobLock(jobName,jobMgr.kv,jobMgr.lease)
+	return
+}

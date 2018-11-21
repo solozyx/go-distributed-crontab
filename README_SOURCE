@@ -37,7 +37,9 @@ go-distributed-crontab/Go语言实现分布式crontab
                    执行任务 jobExecutingTable map的并发去重
                    Executor执行shell 通过channel 回传执行结果给 Scheduler 协程间通信用channel
             |--Executor.go
-                |--
+                |--在分布式集群中防止任务并发调度
+            |--JobLock.go
+                |--etcd事务TXN机制实现分布式乐观锁
         |--common/共享工具类
             |--Protocol.go
                 |http应答 工具方法
