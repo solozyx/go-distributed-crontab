@@ -20,6 +20,8 @@ type Scheduler struct{
 	jobEventChan chan *common.JobEvent
 	// job调度计划表 任务名全局唯一
 	jobPlanTable map[string]*common.JobSchedulePlan
+	// job执行表存放当前正在执行的任务
+	jobExecutingTable map[string]*common.JobExecuteInfo
 }
 
 /*
@@ -30,6 +32,7 @@ func InitScheduler()(err error){
 		// make 1000 的容量
 		jobEventChan:make(chan *common.JobEvent,1000),
 		jobPlanTable:make(map[string]*common.JobSchedulePlan),
+		jobExecutingTable:make(map[string]*common.JobExecuteInfo),
 	}
 	// 启动调度协程
 	go G_scheduler.scheduleLoop()
@@ -121,7 +124,8 @@ func (scheduler *Scheduler)TrySchedule()(scheduleAfter time.Duration){
 	for _,jobPlan = range scheduler.jobPlanTable {
 		if jobPlan.NextTime.Before(now) || jobPlan.NextTime.Equal(now) {
 			// TODO 任务到期 尝试(任务到期但是前一次执行还没有结束 不一定能启动它,要等前一次执行结束)执行任务
-			fmt.Println("worker scheduler 执行任务 : ",jobPlan.Job.Name)
+			// fmt.Println("worker scheduler 执行任务 : ",jobPlan.Job.Name)
+			scheduler.TryStartJob(jobPlan)
 			// 基于当前时间 更新job下一次执行时间
 			jobPlan.NextTime = jobPlan.Expr.Next(now)
 		}
@@ -134,4 +138,30 @@ func (scheduler *Scheduler)TrySchedule()(scheduleAfter time.Duration){
 	// 下次调度间隔 最近要执行的任务调度时间 - 当前时间
 	scheduleAfter = (*nearTime).Sub(now)
 	return
+}
+
+/*
+调度:定期检查哪些任务到期
+执行:发现到期任务尝试执行job任务
+	 执行的任务可能运行很久,比如运行1分钟,1分钟调度60次,但是1分钟只能执行1次,
+	 程序的定时器 time.timer 是不可能完全精准的
+	 TODO 通过 jobExecutingTable 去重防止并发
+	 所以是尝试启动任务
+*/
+func (scheduler *Scheduler)TryStartJob(jobPlan *common.JobSchedulePlan){
+	var(
+		jobExecuteInfo *common.JobExecuteInfo
+		jobExecuting bool
+	)
+	// 如果job正在执行跳过本次调度
+	if jobExecuteInfo,jobExecuting = scheduler.jobExecutingTable[jobPlan.Job.Name]; jobExecuting {
+		// job正在运行 静默处理
+		fmt.Println("worker Scheduler 任务正在执行跳过本次执行 : ",jobPlan.Job.Name)
+		return
+	}
+	// job没有执行 则执行job任务
+	jobExecuteInfo = common.BuildJobExecuteInfo(jobPlan)
+	scheduler.jobExecutingTable[jobPlan.Job.Name] = jobExecuteInfo
+	// TODO 执行job 启动shell命令 并发调度shell
+	fmt.Println("worker Scheduler 开始执行job任务 : ",jobPlan.Job.Name,jobExecuteInfo.PlanTime,jobExecuteInfo.RealTime)
 }

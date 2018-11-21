@@ -33,6 +33,17 @@ type JobSchedulePlan struct {
 }
 
 /*
+任务执行信息
+*/
+type JobExecuteInfo struct{
+	Job *Job
+	// 理论上job计划开始时间
+	PlanTime time.Time
+	// 真实job开始时间
+	RealTime time.Time
+}
+
+/*
 http接口应答
 */
 type Response struct {
@@ -112,6 +123,20 @@ func BuildJobSchedulePlan(job *Job)(jobSchedulePlan *JobSchedulePlan,err error){
 		Job:job,
 		Expr:expr,
 		NextTime:expr.Next(time.Now()),
+	}
+	return
+}
+
+/*
+构造任务执行状态信息
+*/
+func BuildJobExecuteInfo(jobSchedulePlan *JobSchedulePlan)(jobExecuteInfo *JobExecuteInfo){
+	jobExecuteInfo = &JobExecuteInfo{
+		Job:jobSchedulePlan.Job,
+		// 计划调度时间
+		PlanTime:jobSchedulePlan.NextTime,
+		// 真实调度时间 计算繁忙导致延迟
+		RealTime:time.Now(),
 	}
 	return
 }

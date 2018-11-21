@@ -29,11 +29,14 @@ go-distributed-crontab/Go语言实现分布式crontab
         |--worker/分布式worker节点
             |
             |--Config.go
-                |--
+                |--worker节点部署配置
             |--JobMgr.go
-                |--
+                |--worker节点job任务管理
+            |--Scheduler.go
+                |--调度协程 同步etcd任务到调度列表 jobPlanTable
+                   执行任务 jobExecutingTable map的并发去重
         |--common/共享工具类
             |--Protocol.go
-                |http应答
+                |http应答 工具方法
             |--Constants.go
                 |常量包 增强语义 便于维护
