@@ -16,6 +16,13 @@
 
   "web页面根目录":"前后端分离 生产写绝对磁盘路径",
   "因为程序执行目录会变化":"避免找不到文件",
-  "webRoot":"./webroot"
+  "webRoot":"./webroot",
 
+  "mongodb地址":"mongodb URI",
+  "mongodbUri":"mongodb://192.168.234.139:27017",
+
+  "mongodb连接超时时间":"单位 毫秒",
+  "mongodbConnectTimeout":5000,
+
+  "":""
 }

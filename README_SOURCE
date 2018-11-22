@@ -26,6 +26,8 @@ go-distributed-crontab/Go语言实现分布式crontab
                 |--配置文件master.json解析 struct标签语法 json反序列化 配置单例
             |--JobMgr.go
                 |--对etcd集群的CRUD操作 管理 /cron/jobs/ 和 /cron/killer/ 任务
+            |--LogMgr.go
+                |--查询mongodb日志记录
         |--worker/分布式worker节点
             |
             |--Config.go

@@ -50,6 +50,7 @@ func InitApiServer() (err error){
 	mux.HandleFunc("/job/delete",handleJobDelete)
 	mux.HandleFunc("/job/list",handleJobList)
 	mux.HandleFunc("/job/kill",handleJobKill)
+	mux.HandleFunc("/job/log",handleJobLog)
 
 	// golang加载静态文件页面
 	staticDir = http.Dir(G_config.WebRoot)
@@ -227,6 +228,58 @@ func handleJobKill(resp http.ResponseWriter, req *http.Request) {
 	return
 ERR:
 	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err != nil{
+		resp.Write(bytes)
+	}
+}
+
+/*
+从mongodb查询任务日志
+GET ip:8070?name=job1&skip=0&limit=10
+req.Form 	 get表单
+req.PostForm post表单
+*/
+func handleJobLog(resp http.ResponseWriter,req *http.Request){
+	var (
+		err error
+		// 任务名称
+		name string
+		// 翻页参数 从第几条开始
+		skipParam string
+		skip int
+		// 翻页参数 限制返回多少条
+		limitParam string
+		limit int
+		// mongo返回日志切片
+		jobLogs []*common.JobLog
+		// http应答
+		bytes []byte
+	)
+	// 解析GET参数
+	if err = req.ParseForm(); err != nil {
+		goto ERR
+	}
+	// 获取请求参数
+	name = req.Form.Get("name")
+	skipParam = req.Form.Get("skip")
+	limitParam = req.Form.Get("limit")
+	if skip,err = strconv.Atoi(skipParam); err != nil {
+		skip = 0
+	}
+	if limit,err = strconv.Atoi(limitParam); err != nil {
+		limit = 20
+	}
+	// mongo发起查询
+	if jobLogs,err = G_logMgr.ListLog(name,skip,limit); err != nil {
+		goto ERR
+	}
+	// 返回http正常应答
+	if bytes,err = common.BuildResponse(0,"success",jobLogs); err == nil {
+		resp.Write(bytes)
+	}
+	return
+ERR:
+	// 返回http异常应答
+	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil {
 		resp.Write(bytes)
 	}
 }

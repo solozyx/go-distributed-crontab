@@ -100,6 +100,21 @@ type JobLogBatch struct{
 }
 
 /*
+master查询mongodb日志过滤条件
+*/
+type JobLogFilter struct {
+	JobName string `bson:"jobName"`
+}
+
+/*
+master查询mongodb日志排序条件
+*/
+type SortJobLogByStartTime struct {
+	// 按JobLog开始时间倒序 {startTime:-1}
+	SortOrder int `bson:"startTime"`
+}
+
+/*
 http接口应答
 */
 type Response struct {
