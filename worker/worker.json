@@ -3,5 +3,19 @@
   "etcdEndpoints":["192.168.234.139:2379"],
 
   "etcd连接超时":"单位 毫秒 ",
-  "etcdDialTimeout":5000
+  "etcdDialTimeout":5000,
+
+  "mongodb地址":"mongodb URI",
+  "mongodbUri":"mongodb://192.168.234.139:27017",
+
+  "mongodb连接超时时间":"单位 毫秒",
+  "mongodbConnectTimeout":5000,
+
+  "mongodb job log batch size":"批次最大阈值",
+  "mongodbLogBatchSize":100,
+
+  "mongodb job log batch自动提交时间限制":"单位 毫秒",
+  "mongodbLogBatchCommitTimeout":1000,
+
+  "":""
 }

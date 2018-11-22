@@ -198,10 +198,37 @@ func (scheduler *Scheduler)PushJobResult(jobExecuteResult *common.JobExecuteResu
 Executor执行完shell把结果回传Scheduler,调度协程处理Executor的回传数据
 */
 func (scheduler *Scheduler)handleJobResult(jobExecuteResult *common.JobExecuteResult){
+	var(
+		jobLog *common.JobLog
+	)
 	fmt.Println("worker Executor 回传 Scheduler 任务执行结果 : ",
 		jobExecuteResult.ExecuteInfo.Job.Name,
 		string(jobExecuteResult.Output),
 		jobExecuteResult.Err)
 	// 从正在执行的任务列表中删除该任务 保证后续该任务在 TrySchedule 能再次被调度执行
 	delete(scheduler.jobExecutingTable,jobExecuteResult.ExecuteInfo.Job.Name)
+	// 生成执行日志
+	// 不是因为锁被占用产生的err 在分布式集群多个worker锁被占用的err是常见的
+	// 只上报shell命令执行的错误 抢锁失败的err不上报
+	if jobExecuteResult.Err != common.ERR_LOCK_ALREADY_REQUIRET {
+		jobLog = &common.JobLog{
+			JobName:jobExecuteResult.ExecuteInfo.Job.Name,
+			Command:jobExecuteResult.ExecuteInfo.Job.Command,
+			Output:string(jobExecuteResult.Output),
+			PlanTime:jobExecuteResult.ExecuteInfo.PlanTime.UnixNano()/1000/1000, // 纳秒/1000=微秒/1000=毫秒
+			ScheduleTime:jobExecuteResult.ExecuteInfo.RealTime.UnixNano()/1000/1000,
+			StartTime:jobExecuteResult.StartTime.UnixNano()/1000/1000,
+			EndTime:jobExecuteResult.EndTime.UnixNano()/1000/1000,
+		}
+		// output,err = cmd.CombinedOutput() err可能是空 没有错误
+		if jobExecuteResult.Err != nil {
+			jobLog.Err = jobExecuteResult.Err.Error()
+		}else{
+			jobLog.Err = ""
+		}
+		// TODO shell执行日志存储到mongodb 转发写日志到单独的协程处理模块
+		// Scheduler.scheduleLoop 追求任务调度的精准度 写日志会影响任务调度
+		// mongodb插入比较慢 会让调度失去精度 甚至终止调度 调度阻塞
+		G_logSink.Append(jobLog)
+	}
 }

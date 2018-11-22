@@ -22,6 +22,9 @@ func main() {
 	if err = worker.InitConfig(workerConfFileParam); err != nil {
 		goto ERR
 	}
+	if err = worker.InitLogSink(); err != nil {
+		goto ERR
+	}
 	// 初始化worker cron任务执行器
 	if err = worker.InitExecutor(); err != nil {
 		goto ERR

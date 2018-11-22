@@ -14,7 +14,14 @@ type Config struct {
 	EtcdEndpoints []string `json:"etcdEndpoints"`
 	// etcd连接超时
 	EtcdDialTimeout int `json:"etcdDialTimeout"`
-
+	// mongodb地址
+	MongodbUri string `json:"mongodbUri"`
+	// mongo连接超时
+	MongodbConnectTimeout int `json:"mongodbConnectTimeout"`
+	// mongo log批次阈值
+	MongodbLogBatchSize int `json:"mongodbLogBatchSize"`
+	// mongo log批次自动提交时间间隔限定
+	MongodbLogBatchCommitTimeout int `json:"mongodbLogBatchCommitTimeout"`
 }
 
 func InitConfig(masterConfFilePath string) (err error) {
