@@ -4,6 +4,7 @@ import (
 	"common"
 	"os/exec"
 	"time"
+	"math/rand"
 )
 
 var(
@@ -45,6 +46,10 @@ func (executor *Executor)ExecuteJob(jobExecuteInfo *common.JobExecuteInfo){
 
 		// 抢锁 抢到锁就执行下面的代码 没抢到锁跳过下面代码
 		// 抢锁 TryLock 是网络操作
+		// TODO 解决分布式集群抢锁倾斜问题 随机睡眠(0-1秒) 不同worker节点 时钟差别在1秒之内
+		// 经过1个随机睡眠不同worker的竞争机会就随机均等了 rand.Intn 生成 0-n 随机数 1秒=1000毫秒
+		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+
 		err = jobLock.TryLock()
 		// shell任务执行完成 释放锁 defer无论走哪个分支 最后都会释放锁
 		// 只有锁成功 isLocked 才会真正释放锁 可以大胆defer
