@@ -25,6 +25,10 @@ func main() {
 	if err = master.InitConfig(masterConfFileParam); err != nil {
 		goto ERR
 	}
+	// 初始化worker集群管理器
+	if err = master.InitWorkerMgrETCD(); err != nil {
+		goto ERR
+	}
 	// 读取mongo日志
 	if err = master.InitLogMgr(); err != nil {
 		goto ERR

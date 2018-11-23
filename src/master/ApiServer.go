@@ -51,6 +51,7 @@ func InitApiServer() (err error){
 	mux.HandleFunc("/job/list",handleJobList)
 	mux.HandleFunc("/job/kill",handleJobKill)
 	mux.HandleFunc("/job/log",handleJobLog)
+	mux.HandleFunc("/worker/list",handleWorkerList)
 
 	// golang加载静态文件页面
 	staticDir = http.Dir(G_config.WebRoot)
@@ -279,6 +280,28 @@ func handleJobLog(resp http.ResponseWriter,req *http.Request){
 	return
 ERR:
 	// 返回http异常应答
+	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil {
+		resp.Write(bytes)
+	}
+}
+
+/*
+master节点获取etcd集群健康worker节点列表
+*/
+func handleWorkerList(resp http.ResponseWriter,req *http.Request){
+	var(
+		workers []string
+		err error
+		bytes []byte
+	)
+	if workers,err = G_workerMgrETCD.ListWorkers(); err != nil {
+		goto ERR
+	}
+	if bytes,err = common.BuildResponse(0,"success",workers); err == nil {
+		resp.Write(bytes)
+	}
+	return
+ERR:
 	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil {
 		resp.Write(bytes)
 	}

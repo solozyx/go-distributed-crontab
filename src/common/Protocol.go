@@ -179,6 +179,13 @@ func ExtractKillerName(killerKey string) string {
 	return strings.TrimPrefix(killerKey,JOB_KILL_DIR)
 }
 
+/*
+从 /cron/workers/192.168.10.10 抹掉 /cron/workers/ 提取 192.168.10.10
+*/
+func ExtractWorkerIP(workerKey string) string {
+	return strings.TrimPrefix(workerKey,JOB_WORKER_DIR)
+}
+
 func BuildJobEvent(eventType int, job *Job) (jobEvent *JobEvent) {
 	return &JobEvent{
 		EventType:eventType,

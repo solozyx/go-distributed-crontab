@@ -28,6 +28,8 @@ go-distributed-crontab/Go语言实现分布式crontab
                 |--对etcd集群的CRUD操作 管理 /cron/jobs/ 和 /cron/killer/ 任务
             |--LogMgr.go
                 |--查询mongodb日志记录
+            |--WorkerMgrETCD.go
+                |--master节点服务发现 etcd中存活worker节点
         |--worker/分布式worker节点
             |
             |--Config.go
