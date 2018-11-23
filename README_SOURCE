@@ -44,6 +44,8 @@ go-distributed-crontab/Go语言实现分布式crontab
                 |--etcd事务TXN机制实现分布式乐观锁
             |--LogSink.go
                 |--shell执行标准输出 标准错误输出 写入mongodb 定时器time.Timer的时候
+            |--RegisterETCD.go
+                |--worker节点服务注册到etcd
         |--common/共享工具类
             |--Protocol.go
                 |http应答 工具方法

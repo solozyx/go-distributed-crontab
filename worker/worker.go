@@ -22,6 +22,10 @@ func main() {
 	if err = worker.InitConfig(workerConfFileParam); err != nil {
 		goto ERR
 	}
+	// worker节点注册到etcd
+	if err = worker.InitRegisterETCD(); err != nil {
+		goto ERR
+	}
 	if err = worker.InitLogSink(); err != nil {
 		goto ERR
 	}
