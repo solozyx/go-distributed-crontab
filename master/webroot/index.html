@@ -154,9 +154,12 @@
     <script>
         // 页面加载完成后, 回调函数 $(document).ready(function(){})
         $(document).ready(function() {
-            // 时间格式化函数
+            // 时间格式化函数 参数 毫秒时间戳
             function timeFormat(millsecond) {
-                // 前缀补0: 2018-08-07 08:01:03.345
+                // TODO NOTICE
+                // JavaScript 没有时间字符串格式化函数 没有该功能
+                // 前缀补0: 2018-08-10 08:01:03.345
+                // 给定任意数字num 前缀补0 到长度为 n
                 function paddingNum(num, n) {
                     var len = num.toString().length
                     while (len < n) {
@@ -165,15 +168,18 @@
                     }
                     return num
                 }
+
                 var date = new Date(millsecond)
                 var year = date.getFullYear()
+                // 比如 8月 要补成 08 月份是 0-11所以要 加1 再补 月份补到2位长度
                 var month = paddingNum(date.getMonth() + 1, 2)
                 var day = paddingNum(date.getDate(), 2)
                 var hour = paddingNum(date.getHours(), 2)
                 var minute = paddingNum(date.getMinutes(), 2)
                 var second = paddingNum(date.getSeconds(), 2)
                 var millsecond = paddingNum(date.getMilliseconds(), 3)
-                return year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second + "." + millsecond
+                return year + "-" + month + "-" + day + " " +
+                        hour + ":" + minute + ":" + second + "." + millsecond
             }
 
             // 1, 绑定按钮的事件处理函数
@@ -290,6 +296,7 @@
                             tr.append($('<td>').html(log.command))
                             tr.append($('<td>').html(log.err))
                             tr.append($('<td>').html(log.output))
+                            // 服务端返回时间是毫秒时间戳 转换为可读格式
                             tr.append($('<td>').html(timeFormat(log.planTime)))
                             tr.append($('<td>').html(timeFormat(log.scheduleTime)))
                             tr.append($('<td>').html(timeFormat(log.startTime)))
@@ -299,8 +306,7 @@
                         }
                     }
                 })
-
-                // 弹出模态框
+                // ajax请求是异步的 会 先弹出模态框 ajax请求成功后才填充上面的数据
                 $('#log-modal').modal('show')
             })
 

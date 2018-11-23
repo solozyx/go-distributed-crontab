@@ -72,23 +72,23 @@ shell任务执行日志
 */
 type JobLog struct{
 	// 任务名
-	JobName string `bson:"jobName"`
+	JobName string `bson:"jobName" json:"jobName"`
 	// shell命令
-	Command string `bson:"command"`
+	Command string `bson:"command" json:"command"`
 	// shell命令执行错误输出
-	Err string `bson:"err"`
+	Err string `bson:"err" json:"err"`
 	// shell命令执行标准输出
-	Output string `bson:"output"`
+	Output string `bson:"output" json:"output"`
 	// shell命令计划调度时间 Unix时间戳 精确到毫秒或微秒
-	PlanTime int64 `bson:"planTime"`
+	PlanTime int64 `bson:"planTime" json:"planTime"`
 	// shell命令真实调度时间 如果和 PlanTime相差大
 	// 说明worker节点调度繁忙 导致来不及扫描所有任务
 	// 正常是毫秒微秒时间差
-	ScheduleTime int64 `bson:"scheduleTime"`
+	ScheduleTime int64 `bson:"scheduleTime" json:"scheduleTime"`
 	// shell命令执行启动时间点
-	StartTime int64 `bson:"startTime"`
+	StartTime int64 `bson:"startTime" json:"startTime"`
 	// shell命令执行结束时间点 和 StartTime 的差值表示执行任务时长
-	EndTime int64 `bson:"endTime"`
+	EndTime int64 `bson:"endTime" json:"endTime"`
 }
 
 /*
