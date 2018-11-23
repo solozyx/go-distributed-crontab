@@ -1,5 +1,7 @@
 go-distributed-crontab/Go语言实现分布式crontab
-    |
+    |--deploy/集群部署配置
+        |--crontab.conf
+            |--Nginx HTTP反向代理配置
     |--master/分布式master节点cmd
         |--master.go
             |master节点启动 根据机器CPU设置运行线程数 命令行参数
