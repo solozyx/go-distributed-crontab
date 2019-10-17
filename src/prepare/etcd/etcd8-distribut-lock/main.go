@@ -28,7 +28,7 @@ func main() {
 		txnResp *clientv3.TxnResponse
 	)
 	config = clientv3.Config{
-		Endpoints:[]string{"192.168.234.135:2379"},
+		Endpoints:[]string{"192.168.174.134:2379"},
 		DialTimeout:5*time.Second,
 	}
 	if client,err = clientv3.New(config); err != nil {
@@ -128,3 +128,29 @@ func main() {
 	//
 	// 正常退出main也会执行defer后的操作 把锁释放掉
 }
+
+/*
+[root@CentOS3 ~]# etcdctl watch "/cron/lock" --prefix
+PUT
+/cron/lock/job9
+xxx
+DELETE
+/cron/lock/job9
+*/
+
+/*
+终端1
+$ go run etcd8-distribut-lock/main.go
+接收到租约自动续租应答,对应租约ID :  7587841726481639909
+抢到锁,在分布式锁内,安全 ...
+处理任务...
+接收到租约自动续租应答,对应租约ID :  7587841726481639909
+接收到租约自动续租应答,对应租约ID :  7587841726481639909
+ */
+
+/*
+终端2
+$ go run etcd8-distribut-lock/main.go
+接收到租约自动续租应答,对应租约ID :  7587841726481639912
+锁被占用 :  xxx
+*/
