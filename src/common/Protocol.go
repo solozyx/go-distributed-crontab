@@ -1,11 +1,12 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"time"
+
 	"github.com/gorhill/cronexpr"
-	"context"
 )
 
 //-----------------------------
@@ -16,7 +17,7 @@ import (
 /*
 定时任务
 */
-type Job struct{
+type Job struct {
 	// 任务名称
 	Name string `json:"name"`
 	// 执行shell命令
@@ -41,7 +42,7 @@ type JobSchedulePlan struct {
 /*
 任务执行信息
 */
-type JobExecuteInfo struct{
+type JobExecuteInfo struct {
 	Job *Job
 	// 理论上job计划开始时间
 	PlanTime time.Time
@@ -64,13 +65,13 @@ type JobExecuteResult struct {
 	Err error
 	// shell 脚本真实启动时间
 	StartTime time.Time
-	EndTime time.Time
+	EndTime   time.Time
 }
 
 /*
 shell任务执行日志
 */
-type JobLog struct{
+type JobLog struct {
 	// 任务名
 	JobName string `bson:"jobName" json:"jobName"`
 	// shell命令
@@ -95,7 +96,7 @@ type JobLog struct{
 不要逐条写入JobLog到mongodb
 提高吞吐量
 */
-type JobLogBatch struct{
+type JobLogBatch struct {
 	JobLogs []interface{}
 }
 
@@ -118,9 +119,9 @@ type SortJobLogByStartTime struct {
 http接口应答
 */
 type Response struct {
-	Errno int `json:"errno"`
-	Msg string `json:"msg"`
-	Data interface{} `json:"data"`
+	Errno int         `json:"errno"`
+	Msg   string      `json:"msg"`
+	Data  interface{} `json:"data"`
 }
 
 /*
@@ -138,27 +139,27 @@ type JobEvent struct {
 /*
 http接口应答API
 */
-func BuildResponse(error int,msg string,data interface{})(resp []byte,err error){
-	var(
+func BuildResponse(error int, msg string, data interface{}) (resp []byte, err error) {
+	var (
 		response Response
 	)
 	response.Errno = error
 	response.Msg = msg
 	response.Data = data
-	resp,err = json.Marshal(&response)
+	resp, err = json.Marshal(&response)
 	return
 }
 
 /*
 json字符串 -> 反序列化为对象
 */
-func UnpackJob(jsonStrByte []byte) (job *Job,err error){
-	var(
+func UnpackJob(jsonStrByte []byte) (job *Job, err error) {
+	var (
 		jobPtr *Job
 	)
 	// 创建1个Job对象
 	jobPtr = &Job{}
-	if err = json.Unmarshal(jsonStrByte,jobPtr); err != nil {
+	if err = json.Unmarshal(jsonStrByte, jobPtr); err != nil {
 		return
 	}
 	job = jobPtr
@@ -169,45 +170,45 @@ func UnpackJob(jsonStrByte []byte) (job *Job,err error){
 从 /cron/jobs/job1 抹掉 /cron/jobs/ 提取 job1
 */
 func ExtractJobName(jobKey string) string {
-	return strings.TrimPrefix(jobKey,JOB_SAVE_DIR)
+	return strings.TrimPrefix(jobKey, JOB_SAVE_DIR)
 }
 
 /*
 从 /cron/killer/job1 抹掉 /cron/killer/ 提取 job1
 */
 func ExtractKillerName(killerKey string) string {
-	return strings.TrimPrefix(killerKey,JOB_KILL_DIR)
+	return strings.TrimPrefix(killerKey, JOB_KILL_DIR)
 }
 
 /*
 从 /cron/workers/192.168.10.10 抹掉 /cron/workers/ 提取 192.168.10.10
 */
 func ExtractWorkerIP(workerKey string) string {
-	return strings.TrimPrefix(workerKey,JOB_WORKER_DIR)
+	return strings.TrimPrefix(workerKey, JOB_WORKER_DIR)
 }
 
 func BuildJobEvent(eventType int, job *Job) (jobEvent *JobEvent) {
 	return &JobEvent{
-		EventType:eventType,
-		Job:job,
+		EventType: eventType,
+		Job:       job,
 	}
 }
 
 /*
 构造任务执行计划
 */
-func BuildJobSchedulePlan(job *Job)(jobSchedulePlan *JobSchedulePlan,err error){
-	var(
+func BuildJobSchedulePlan(job *Job) (jobSchedulePlan *JobSchedulePlan, err error) {
+	var (
 		expr *cronexpr.Expression
 	)
 	// cron表达式解析
-	if expr,err = cronexpr.Parse(job.CronExpr); err != nil {
+	if expr, err = cronexpr.Parse(job.CronExpr); err != nil {
 		return
 	}
 	jobSchedulePlan = &JobSchedulePlan{
-		Job:job,
-		Expr:expr,
-		NextTime:expr.Next(time.Now()),
+		Job:      job,
+		Expr:     expr,
+		NextTime: expr.Next(time.Now()),
 	}
 	return
 }
@@ -215,14 +216,14 @@ func BuildJobSchedulePlan(job *Job)(jobSchedulePlan *JobSchedulePlan,err error){
 /*
 构造任务执行状态信息
 */
-func BuildJobExecuteInfo(jobSchedulePlan *JobSchedulePlan)(jobExecuteInfo *JobExecuteInfo){
+func BuildJobExecuteInfo(jobSchedulePlan *JobSchedulePlan) (jobExecuteInfo *JobExecuteInfo) {
 	jobExecuteInfo = &JobExecuteInfo{
-		Job:jobSchedulePlan.Job,
+		Job: jobSchedulePlan.Job,
 		// 计划调度时间
-		PlanTime:jobSchedulePlan.NextTime,
+		PlanTime: jobSchedulePlan.NextTime,
 		// 真实调度时间 计算繁忙导致延迟
-		RealTime:time.Now(),
+		RealTime: time.Now(),
 	}
-	jobExecuteInfo.CancelCtx,jobExecuteInfo.CancelFunc = context.WithCancel(context.TODO())
+	jobExecuteInfo.CancelCtx, jobExecuteInfo.CancelFunc = context.WithCancel(context.TODO())
 	return
 }

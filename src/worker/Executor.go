@@ -2,12 +2,12 @@ package worker
 
 import (
 	"common"
+	"math/rand"
 	"os/exec"
 	"time"
-	"math/rand"
 )
 
-var(
+var (
 	// 全局shell执行器单例
 	G_executor *Executor
 )
@@ -16,28 +16,27 @@ var(
 shell命令执行器
 */
 type Executor struct {
-
 }
 
 /*
 执行shell命令
 启动1个协程 很多job的shell任务要执行,并发去调度
 */
-func (executor *Executor)ExecuteJob(jobExecuteInfo *common.JobExecuteInfo){
+func (executor *Executor) ExecuteJob(jobExecuteInfo *common.JobExecuteInfo) {
 	go func() {
-		var(
-			cmd *exec.Cmd
+		var (
+			cmd    *exec.Cmd
 			output []byte
-			err error
+			err    error
 			result *common.JobExecuteResult
 			// 分布式锁
 			jobLock *JobLock
 		)
 		// shell执行结果
 		result = &common.JobExecuteResult{
-			ExecuteInfo:jobExecuteInfo,
+			ExecuteInfo: jobExecuteInfo,
 			// 执行shell没有输出 则返回空切片
-			Output:make([]byte,0),
+			Output: make([]byte, 0),
 		}
 		// 初始化分布式锁
 		jobLock = G_jobMgr.CreateJobLock(jobExecuteInfo.Job.Name)
@@ -59,7 +58,7 @@ func (executor *Executor)ExecuteJob(jobExecuteInfo *common.JobExecuteInfo){
 			result.Err = err
 			// 刚启动抢锁失败就结束
 			result.EndTime = time.Now()
-		}else{
+		} else {
 			// 抢锁成功后重置任务开始时间
 			result.StartTime = time.Now()
 			// 执行shell命令 /bin/bash -c "shell"
@@ -70,7 +69,7 @@ func (executor *Executor)ExecuteJob(jobExecuteInfo *common.JobExecuteInfo){
 				"-c",
 				jobExecuteInfo.Job.Command)
 			// 执行cmd并捕获输出
-			output,err = cmd.CombinedOutput()
+			output, err = cmd.CombinedOutput()
 			result.EndTime = time.Now()
 			result.Output = output
 			result.Err = err
@@ -88,7 +87,7 @@ func (executor *Executor)ExecuteJob(jobExecuteInfo *common.JobExecuteInfo){
 /*
 初始化执行器
 */
-func InitExecutor()(err error){
+func InitExecutor() (err error) {
 	// 赋值全局单例
 	G_executor = &Executor{
 

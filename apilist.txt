@@ -1,0 +1,14 @@
+/job/save
+/job/delete
+/job/list
+/job/kill
+/job/log
+/worker/list
+
+etcd
+/cron/jobs/jobName -> json
+/cron/killer/jobName
+/cron/workers/ip 节点服务注册 服务发现
+
+mongodb
+cron.log

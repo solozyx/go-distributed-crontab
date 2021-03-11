@@ -1,12 +1,12 @@
 package master
 
 import (
-	"net/http"
-	"net"
-	"time"
-	"strconv"
-	"encoding/json"
 	"common"
+	"encoding/json"
+	"net"
+	"net/http"
+	"strconv"
+	"time"
 )
 
 var (
@@ -22,17 +22,17 @@ var (
 /*
 http接口
 */
-type ApiServer struct{
+type ApiServer struct {
 	httpServer *http.Server
 }
 
 /*
 初始化HTTP服务
 */
-func InitApiServer() (err error){
+func InitApiServer() (err error) {
 	var (
-		mux *http.ServeMux
-		listener net.Listener
+		mux       *http.ServeMux
+		listener  net.Listener
 		httpSever *http.Server
 		// web静态资源根目录
 		staticDir http.Dir
@@ -46,12 +46,12 @@ func InitApiServer() (err error){
 	// handler func(ResponseWriter, *Request) 回调函数
 	// 参数(应答,请求) 应答对象写入你需要返回的数据做应答
 	// 浏览器请求该URL 该回调函数会被回调
-	mux.HandleFunc("/job/save",handleJobSave)
-	mux.HandleFunc("/job/delete",handleJobDelete)
-	mux.HandleFunc("/job/list",handleJobList)
-	mux.HandleFunc("/job/kill",handleJobKill)
-	mux.HandleFunc("/job/log",handleJobLog)
-	mux.HandleFunc("/worker/list",handleWorkerList)
+	mux.HandleFunc("/job/save", handleJobSave)
+	mux.HandleFunc("/job/delete", handleJobDelete)
+	mux.HandleFunc("/job/list", handleJobList)
+	mux.HandleFunc("/job/kill", handleJobKill)
+	mux.HandleFunc("/job/log", handleJobLog)
+	mux.HandleFunc("/worker/list", handleWorkerList)
 
 	// golang加载静态文件页面
 	staticDir = http.Dir(G_config.WebRoot)
@@ -64,7 +64,7 @@ func InitApiServer() (err error){
 	// 请求 /index.html 匹配到 /
 	// StripPrefix 把 "/index.html" 的 "/" 抹掉 得到 "index.html" 交给 staticHandler
 	// 相当于做一次转发
-	mux.Handle("/",http.StripPrefix("/",staticHandler))
+	mux.Handle("/", http.StripPrefix("/", staticHandler))
 
 	// 启动监听端口
 	// http是tcp服务,启动TCP监听
@@ -74,7 +74,7 @@ func InitApiServer() (err error){
 	// 把服务端端口写死了，交给运维部署，想要更换端口，需要重新编译程序，不合理
 	// 增加配置功能
 	// if listener,err = net.Listen("tcp",":8070"); err != nil {
-	if listener,err = net.Listen("tcp",":" + strconv.Itoa(G_config.ApiPort)); err != nil {
+	if listener, err = net.Listen("tcp", ":"+strconv.Itoa(G_config.ApiPort)); err != nil {
 		return
 	}
 	// 创建http服务
@@ -82,16 +82,16 @@ func InitApiServer() (err error){
 		// 接口一般毫秒粒度超时控制,一个接口超过2000毫秒 2秒就认为服务端有异常
 		// 正常接口都是 毫秒 微秒 级别返回
 		// ReadTimeout:5 * time.Second,
-		ReadTimeout:time.Duration(G_config.ApiReadTimeout) * time.Millisecond,
+		ReadTimeout: time.Duration(G_config.ApiReadTimeout) * time.Millisecond,
 		// WriteTimeout:5 * time.Second,
-		WriteTimeout:time.Duration(G_config.ApiWriteTimeout) * time.Millisecond,
+		WriteTimeout: time.Duration(G_config.ApiWriteTimeout) * time.Millisecond,
 		// 路由,转发,当http收到请求之后回调handler方法,根据请求的url遍历路由表找到匹配的回调函数
 		// 把流量转发给匹配的路由函数
 		// 代理模式
-		Handler:mux,
+		Handler: mux,
 	}
 	// 赋值单例
-	G_apiServer = &ApiServer{httpServer:httpSever}
+	G_apiServer = &ApiServer{httpServer: httpSever}
 	// 把 httPServer 跑到一个协程
 	// 传入监听器 启动了服务端
 	go httpSever.Serve(listener)
@@ -110,12 +110,12 @@ golang http 服务端默认不会解析POST表单 解析耗费CPU 需要主动�
 	正常应答 {"errno":0,"msg":"error info","data":{任意json...}}
 	{任意json...} 用 interface{} 表示 空接口类型是万能容器 可以放任意对象
 */
-func handleJobSave(resp http.ResponseWriter, req *http.Request){
-	var(
-		err error
+func handleJobSave(resp http.ResponseWriter, req *http.Request) {
+	var (
+		err     error
 		postJob string
-		job common.Job
-		oldJob *common.Job
+		job     common.Job
+		oldJob  *common.Job
 		// 序列化好的json串
 		bytes []byte
 	)
@@ -127,24 +127,24 @@ func handleJobSave(resp http.ResponseWriter, req *http.Request){
 	// 2.获取表单job字段
 	postJob = req.PostForm.Get("job")
 	// 3.反序列化postJob -> 结构体Job
-	if err = json.Unmarshal([]byte(postJob),&job); err != nil{
+	if err = json.Unmarshal([]byte(postJob), &job); err != nil {
 		goto ERR
 	}
 	// 4. job -> JobMgr -> etcd
 	// 传入Job结构体指针job
-	if oldJob,err = G_jobMgr.SaveJob(&job); err != nil {
+	if oldJob, err = G_jobMgr.SaveJob(&job); err != nil {
 		goto ERR
 	}
 	// 5. job保存到etcd成功返回 正常应答
 	// NOTICE 这里 err == nil 是json序列化成功没有错误
-	if bytes,err = common.BuildResponse(0,"success",oldJob); err == nil{
+	if bytes, err = common.BuildResponse(0, "success", oldJob); err == nil {
 		resp.Write(bytes)
 	}
 	return
 ERR:
 	// 6. job保存到etcd成功返回 异常应答
 	// NOTICE 这里 err == nil 是json序列化成功没有错误
-	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil{
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err == nil {
 		resp.Write(bytes)
 	}
 }
@@ -155,29 +155,29 @@ POST请求: 表单格式 a=1&b=2&c=3
 	ip:8070/job/delete
 	name=job1
 */
-func handleJobDelete(resp http.ResponseWriter, req *http.Request)  {
-	var(
-		err error
-		name string
+func handleJobDelete(resp http.ResponseWriter, req *http.Request) {
+	var (
+		err    error
+		name   string
 		oldJob *common.Job
-		bytes []byte
+		bytes  []byte
 	)
 	// 解析POST表单
-	if err = req.ParseForm(); err != nil{
+	if err = req.ParseForm(); err != nil {
 		goto ERR
 	}
 	// 要删除的任务名
 	name = req.PostForm.Get("name")
 	// etcd服务端删除key=name任务
-	if oldJob,err = G_jobMgr.DeleteJob(name); err != nil{
+	if oldJob, err = G_jobMgr.DeleteJob(name); err != nil {
 		goto ERR
 	}
-	if bytes,err = common.BuildResponse(0,"success",oldJob); err == nil{
+	if bytes, err = common.BuildResponse(0, "success", oldJob); err == nil {
 		resp.Write(bytes)
 	}
 	return
 ERR:
-	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil{
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err == nil {
 		resp.Write(bytes)
 	}
 }
@@ -186,21 +186,21 @@ ERR:
 列举所有crontab任务 不翻页 一次性从etcd中取出
 GET
 */
-func handleJobList(resp http.ResponseWriter, req *http.Request){
-	var(
+func handleJobList(resp http.ResponseWriter, req *http.Request) {
+	var (
 		jobList []*common.Job
-		err error
-		bytes []byte
+		err     error
+		bytes   []byte
 	)
-	if jobList,err = G_jobMgr.ListJobs(); err != nil{
+	if jobList, err = G_jobMgr.ListJobs(); err != nil {
 		goto ERR
 	}
-	if bytes,err = common.BuildResponse(0,"success",jobList); err == nil{
+	if bytes, err = common.BuildResponse(0, "success", jobList); err == nil {
 		resp.Write(bytes)
 	}
 	return
 ERR:
-	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil{
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err == nil {
 		resp.Write(bytes)
 	}
 }
@@ -210,25 +210,25 @@ ERR:
 POST /job/kill name=job1
 */
 func handleJobKill(resp http.ResponseWriter, req *http.Request) {
-	var(
-		err error
-		name string
+	var (
+		err   error
+		name  string
 		bytes []byte
 	)
 	// 解析POST表单
-	if err = req.ParseForm(); err != nil{
+	if err = req.ParseForm(); err != nil {
 		goto ERR
 	}
 	name = req.PostForm.Get("name")
-	if err = G_jobMgr.KillJob(name); err != nil{
+	if err = G_jobMgr.KillJob(name); err != nil {
 		goto ERR
 	}
-	if bytes,err = common.BuildResponse(0,"success",nil); err == nil{
+	if bytes, err = common.BuildResponse(0, "success", nil); err == nil {
 		resp.Write(bytes)
 	}
 	return
 ERR:
-	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err != nil{
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err != nil {
 		resp.Write(bytes)
 	}
 }
@@ -239,17 +239,17 @@ GET ip:8070?name=job1&skip=0&limit=10
 req.Form 	 get表单
 req.PostForm post表单
 */
-func handleJobLog(resp http.ResponseWriter,req *http.Request){
+func handleJobLog(resp http.ResponseWriter, req *http.Request) {
 	var (
 		err error
 		// 任务名称
 		name string
 		// 翻页参数 从第几条开始
 		skipParam string
-		skip int
+		skip      int
 		// 翻页参数 限制返回多少条
 		limitParam string
-		limit int
+		limit      int
 		// mongo返回日志切片
 		jobLogs []*common.JobLog
 		// http应答
@@ -263,24 +263,24 @@ func handleJobLog(resp http.ResponseWriter,req *http.Request){
 	name = req.Form.Get("name")
 	skipParam = req.Form.Get("skip")
 	limitParam = req.Form.Get("limit")
-	if skip,err = strconv.Atoi(skipParam); err != nil {
+	if skip, err = strconv.Atoi(skipParam); err != nil {
 		skip = 0
 	}
-	if limit,err = strconv.Atoi(limitParam); err != nil {
+	if limit, err = strconv.Atoi(limitParam); err != nil {
 		limit = 20
 	}
 	// mongo发起查询
-	if jobLogs,err = G_logMgr.ListLog(name,skip,limit); err != nil {
+	if jobLogs, err = G_logMgr.ListLog(name, skip, limit); err != nil {
 		goto ERR
 	}
 	// 返回http正常应答
-	if bytes,err = common.BuildResponse(0,"success",jobLogs); err == nil {
+	if bytes, err = common.BuildResponse(0, "success", jobLogs); err == nil {
 		resp.Write(bytes)
 	}
 	return
 ERR:
 	// 返回http异常应答
-	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil {
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err == nil {
 		resp.Write(bytes)
 	}
 }
@@ -288,21 +288,21 @@ ERR:
 /*
 master节点获取etcd集群健康worker节点列表
 */
-func handleWorkerList(resp http.ResponseWriter,req *http.Request){
-	var(
+func handleWorkerList(resp http.ResponseWriter, req *http.Request) {
+	var (
 		workers []string
-		err error
-		bytes []byte
+		err     error
+		bytes   []byte
 	)
-	if workers,err = G_workerMgrETCD.ListWorkers(); err != nil {
+	if workers, err = G_workerMgrETCD.ListWorkers(); err != nil {
 		goto ERR
 	}
-	if bytes,err = common.BuildResponse(0,"success",workers); err == nil {
+	if bytes, err = common.BuildResponse(0, "success", workers); err == nil {
 		resp.Write(bytes)
 	}
 	return
 ERR:
-	if bytes,err = common.BuildResponse(-1,err.Error(),nil); err == nil {
+	if bytes, err = common.BuildResponse(-1, err.Error(), nil); err == nil {
 		resp.Write(bytes)
 	}
 }

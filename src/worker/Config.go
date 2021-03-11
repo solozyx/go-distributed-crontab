@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"io/ioutil"
 	"encoding/json"
+	"io/ioutil"
 )
 
 var (
@@ -27,12 +27,12 @@ type Config struct {
 func InitConfig(masterConfFilePath string) (err error) {
 	var (
 		content []byte
-		config Config
+		config  Config
 	)
-	if content,err = ioutil.ReadFile(masterConfFilePath); err != nil {
+	if content, err = ioutil.ReadFile(masterConfFilePath); err != nil {
 		return
 	}
-	if err = json.Unmarshal(content,&config); err != nil {
+	if err = json.Unmarshal(content, &config); err != nil {
 		return
 	}
 	G_config = &config

@@ -1,12 +1,12 @@
 {
   "etcd集群列表":"多个etcd避免单点故障,单点故障会自动重连",
-  "etcdEndpoints":["192.168.234.139:2379"],
+  "etcdEndpoints":["192.168.174.134:2379"],
 
   "etcd连接超时":"单位 毫秒 ",
   "etcdDialTimeout":5000,
 
   "mongodb地址":"mongodb URI",
-  "mongodbUri":"mongodb://192.168.234.139:27017",
+  "mongodbUri":"mongodb://192.168.174.134:27017",
 
   "mongodb连接超时时间":"单位 毫秒",
   "mongodbConnectTimeout":5000,

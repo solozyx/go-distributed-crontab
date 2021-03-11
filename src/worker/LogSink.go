@@ -1,14 +1,15 @@
 package worker
 
 import (
-	"github.com/mongodb/mongo-go-driver/mongo"
 	"common"
 	"context"
-	"github.com/mongodb/mongo-go-driver/mongo/clientopt"
 	"time"
+
+	"github.com/mongodb/mongo-go-driver/mongo"
+	"github.com/mongodb/mongo-go-driver/mongo/clientopt"
 )
 
-var(
+var (
 	// Log存储全局单例
 	G_logSink *LogSink
 )
@@ -16,7 +17,7 @@ var(
 /*
 写日志
 */
-type LogSink struct{
+type LogSink struct {
 	// mongo客户端
 	client *mongo.Client
 	// log表
@@ -30,24 +31,24 @@ type LogSink struct{
 /*
 初始化日志写入器
 */
-func InitLogSink()(err error){
-	var(
+func InitLogSink() (err error) {
+	var (
 		client *mongo.Client
 	)
-	if client,err = mongo.Connect(
+	if client, err = mongo.Connect(
 		context.TODO(),
 		G_config.MongodbUri,
-		clientopt.ConnectTimeout(time.Duration(G_config.MongodbConnectTimeout) * time.Millisecond));
+		clientopt.ConnectTimeout(time.Duration(G_config.MongodbConnectTimeout)*time.Millisecond));
 		err != nil {
 		return
 	}
 	// 选择db和collection
 	G_logSink = &LogSink{
-		client:client,
+		client: client,
 		// cron数据库的log表
-		logCollection:client.Database("cron").Collection("log"),
-		logChan:make(chan *common.JobLog,1000),
-		autoCommitChan:make(chan *common.JobLogBatch,1),
+		logCollection:  client.Database("cron").Collection("log"),
+		logChan:        make(chan *common.JobLog, 1000),
+		autoCommitChan: make(chan *common.JobLogBatch, 1),
 	}
 	// 启动mongodb处理协程
 	go G_logSink.writeLoop()
@@ -58,8 +59,8 @@ func InitLogSink()(err error){
 消费日志队列协程
 轮询logSink.logChan
 */
-func (logSink *LogSink)writeLoop(){
-	var(
+func (logSink *LogSink) writeLoop() {
+	var (
 		jobLog *common.JobLog
 		// 当前批次
 		jobLogBatch *common.JobLogBatch
@@ -69,7 +70,7 @@ func (logSink *LogSink)writeLoop(){
 	)
 	for {
 		select {
-		case jobLog = <- logSink.logChan:
+		case jobLog = <-logSink.logChan:
 			// 1条 1条 日志插入mongodb 太慢 低吞吐
 			// logSink.logCollection.InsertOne()
 			// 每次插入需要完成mongodb请求的往返,网络环境差耗时可能花费很多时间
@@ -77,7 +78,7 @@ func (logSink *LogSink)writeLoop(){
 				jobLogBatch = &common.JobLogBatch{}
 				// 1秒间隔自动提交本批次日志
 				commitTimer = time.AfterFunc(
-					time.Duration(G_config.MongodbLogBatchCommitTimeout) * time.Millisecond,
+					time.Duration(G_config.MongodbLogBatchCommitTimeout)*time.Millisecond,
 
 					// TODO NOTICE 2个协程之间发通知 chan投递事件
 					// 到达该时间间隔执行该回调函数 该回调函数 在另外1个协程去执行 涉及到并发问题
@@ -89,7 +90,7 @@ func (logSink *LogSink)writeLoop(){
 					// 	// TODO NOTICE
 					//	// jobLogBatch指针是 回调函数func(){}之外 LogSink.writeLoop()协程的指针
 					//	// 会随时在 LogSink.writeLoop() 改掉
-						// logSink.autoCommitChan <- jobLogBatch
+					// logSink.autoCommitChan <- jobLogBatch
 					// },
 					//
 
@@ -99,13 +100,13 @@ func (logSink *LogSink)writeLoop(){
 					// 把 LogSink.writeLoop() 协程的 jobLogBatch 投递到 logSink.autoCommitChan
 					// 形参 batch 在 回调函数的 闭包上下文 与 LogSink.writeLoop() 协程的 jobLogBatch 指针 无关了
 					func(batch *common.JobLogBatch) func() {
-						return func(){
+						return func() {
 							logSink.autoCommitChan <- batch
 						}
 					}(jobLogBatch),
 				)
 			}
-			jobLogBatch.JobLogs = append(jobLogBatch.JobLogs,jobLog)
+			jobLogBatch.JobLogs = append(jobLogBatch.JobLogs, jobLog)
 			// job任务比较少 调度周期比较长 很难攒满 MongodbLogBatchSize 容量
 			// 给一个时间约束作为不满该容量的优化 超过时间批次自动提交 不管多少条
 			if len(jobLogBatch.JobLogs) >= G_config.MongodbLogBatchSize {
@@ -127,7 +128,7 @@ func (logSink *LogSink)writeLoop(){
 				// 可能导致同一个批次 提交2次
 				// TODO 判断 过期本次 是否依旧是 当前批次
 			}
-		case timeoutBatch = <- logSink.autoCommitChan:
+		case timeoutBatch = <-logSink.autoCommitChan:
 			// 当前批次 jobLogBatch 产生时 产生 commitTimer 定时器
 			// 1秒后 触发定时器的回调函数 会把 本批次 jobLogBatch 投递到 logSink.autoCommitChan
 			// 该case就能监听到 	作为过期批次 写入mongo
@@ -146,15 +147,15 @@ func (logSink *LogSink)writeLoop(){
 私有方法
 批量写入日志到mongodb
 */
-func (logSink *LogSink)saveJobLogs(jobLogBatch *common.JobLogBatch){
+func (logSink *LogSink) saveJobLogs(jobLogBatch *common.JobLogBatch) {
 	// 不判断是否写入成功 不关心
-	logSink.logCollection.InsertMany(context.TODO(),jobLogBatch.JobLogs)
+	logSink.logCollection.InsertMany(context.TODO(), jobLogBatch.JobLogs)
 }
 
 /*
 Scheduler模块 和 LogSink模块 通信
 */
-func (logSink *LogSink)Append(jobLog *common.JobLog){
+func (logSink *LogSink) Append(jobLog *common.JobLog) {
 	select {
 	// logSink.logChan 没满就放进去了
 	case logSink.logChan <- jobLog:
